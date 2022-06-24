@@ -33,9 +33,7 @@ contract EcoNFT is ERC721, Ownable {
      */
     mapping(address => string[]) public _socialAccounts;
 
-    constructor() ERC721("EcoNFT", "EcoNFT") Ownable() {
-        console.log("Deploying a EcoNFT");
-    }
+    constructor() ERC721("EcoNFT", "EcoNFT") Ownable() {}
 
     /**
      * Mints an EcoNFT if the discord and twitter IDs have not been claimed yet, and only when the owener of this EcoNFT contract
@@ -48,7 +46,7 @@ contract EcoNFT is ERC721, Ownable {
     function mintEcoNFT(string memory socialID, bytes memory signature)
         external
     {
-        require(hasNotBeenMinted(socialID), "id has minted token");
+        require(hasNotBeenMinted(socialID), "social has minted token");
         require(_verifyMint(socialID, signature), "signature did not match");
         _safeMint(msg.sender, socialToNFTID(socialID));
         _mintedAccounts[socialID] = msg.sender;
