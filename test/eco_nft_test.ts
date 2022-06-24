@@ -15,6 +15,23 @@ describe("EcoNFT tests", async function () {
   let owner: SignerWithAddress, addr0: SignerWithAddress
   let nft: EcoNFT
 
+  describe("On nft transfer", async function () {
+    before(async function () {
+      await deployEcoNFT()
+    })
+
+    it("should fail to transfer a nft", async function () {
+      const sig = await signMessage(socialID, owner)
+      const tokenID = await nft.connect(addr0).mintEcoNFT(socialID, sig)
+
+      await expect(
+        nft.transferFrom(await addr0.getAddress(), await owner.getAddress(), tokenID.value)
+      ).to.be.revertedWith(
+        "ERC721: transfer caller is not owner nor approved"
+      )
+    })
+  })
+
   describe("On invalid signatures", async function () {
     beforeEach(async function () {
       await deployEcoNFT()

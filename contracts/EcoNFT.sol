@@ -45,14 +45,18 @@ contract EcoNFT is ERC721, Ownable {
      */
     function mintEcoNFT(string memory socialID, bytes memory signature)
         external
+        returns (uint256)
     {
         require(hasNotBeenMinted(socialID), "social has minted token");
         require(_verifyMint(socialID, signature), "signature did not match");
-        _safeMint(msg.sender, socialToNFTID(socialID));
+        uint256 tokenID = socialToNFTID(socialID);
+        _safeMint(msg.sender, tokenID);
         _mintedAccounts[socialID] = msg.sender;
         _socialAccounts[msg.sender].push(socialID);
 
         emit MintEvent(msg.sender);
+
+        return tokenID;
     }
 
     /**
