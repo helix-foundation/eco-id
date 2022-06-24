@@ -1,10 +1,8 @@
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
 import { ethers } from "hardhat"
 import { EcoNFT } from "../typechain"
-
 import { signMessage } from "./utils/sign"
-
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 
 /**
  * Tests that the EcoNFT contract performs correctly on minting of nft's
@@ -25,10 +23,12 @@ describe("EcoNFT tests", async function () {
       const tokenID = await nft.connect(addr0).mintEcoNFT(socialID, sig)
 
       await expect(
-        nft.transferFrom(await addr0.getAddress(), await owner.getAddress(), tokenID.value)
-      ).to.be.revertedWith(
-        "ERC721: transfer caller is not owner nor approved"
-      )
+        nft.transferFrom(
+          await addr0.getAddress(),
+          await owner.getAddress(),
+          tokenID.value
+        )
+      ).to.be.revertedWith("ERC721: transfer caller is not owner nor approved")
     })
   })
 
@@ -91,7 +91,7 @@ describe("EcoNFT tests", async function () {
    * Deploys the contract and sets some variables
    */
   async function deployEcoNFT() {
-    [owner, addr0] = await ethers.getSigners()
+    ;[owner, addr0] = await ethers.getSigners()
     const EcoNFT = await ethers.getContractFactory("EcoNFT")
     nft = await EcoNFT.deploy()
     await nft.deployed()

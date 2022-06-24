@@ -13,7 +13,7 @@ import "hardhat/console.sol";
  * mint an EcoNFT. The issued NFT is soulbound to the address it was issue to, and cannot be transfered. Only one EcoNFT can ever be
  * minted per social account.
  */
-contract EcoNFT is ERC721, Ownable {
+contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
     /**
      * Use for signarture recovery and verification on minting of EcoNFT
      */
@@ -32,8 +32,6 @@ contract EcoNFT is ERC721, Ownable {
      * Mapping the user address with all social accounts they have
      */
     mapping(address => string[]) public _socialAccounts;
-
-    constructor() ERC721("EcoNFT", "EcoNFT") Ownable() {}
 
     /**
      * Mints an EcoNFT if the discord and twitter IDs have not been claimed yet, and only when the owener of this EcoNFT contract
