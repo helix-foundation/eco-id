@@ -9,7 +9,7 @@ import "hardhat/console.sol";
 
 /**
  * This is the Eco NFT for linking a user's discord and twitter ids on chain. The owner of this contract will issue a signed tx
- * on behalf of the user once they authenticate their discord and twitter ids. The user can then submit the tx to this contract and 
+ * on behalf of the user once they authenticate their discord and twitter ids. The user can then submit the tx to this contract and
  * mint an EcoNFT. The issued NFT is soulbound to the address it was issue to, and cannot be transfered. Only one EcoNFT can ever be
  * minted per social account.
  */
@@ -19,19 +19,19 @@ contract EcoNFT is ERC721, Ownable {
      */
     using ECDSA for bytes32;
 
-    /** 
+    /**
      * Event for when an EcoNFT is minted
      */
     event MintEvent(address indexed addr);
-    /** 
+    /**
      * Mapping the attested social account id with user address
      */
-    mapping(bytes => address) public _mintedAccounts;
+    mapping(string => address) public _mintedAccounts;
 
-    /** 
+    /**
      * Mapping the user address with all social accounts they have
      */
-    mapping(address => bytes[]) public _socialAccounts;
+    mapping(address => string[]) public _socialAccounts;
 
     constructor() ERC721("EcoNFT", "EcoNFT") Ownable() {
         console.log("Deploying a EcoNFT");
@@ -45,19 +45,15 @@ contract EcoNFT is ERC721, Ownable {
      *  - discordID/twitterID the social ids of the user
      *  - signature is signature that we are validating comes from the owner of this contract, ie the minter account has signed off
      */
-    function mintEcoNFT(
-        bytes memory socialID,
-        bytes memory signature
-    ) external {
+    function mintEcoNFT(string memory socialID, bytes memory signature)
+        external
+    {
         require(hasNotBeenMinted(socialID), "id has minted token");
-        require(
-            _verifyMint(socialID, signature),
-            "signature did not match"
-        );
+        require(_verifyMint(socialID, signature), "signature did not match");
         _safeMint(msg.sender, socialToNFTID(socialID));
         _mintedAccounts[socialID] = msg.sender;
         _socialAccounts[msg.sender].push(socialID);
-       
+
         emit MintEvent(msg.sender);
     }
 
@@ -65,7 +61,7 @@ contract EcoNFT is ERC721, Ownable {
      * Returns the NTF ID for a given social id that we have linked the user too. The function takes the
      * hash of the social id and returns it as a token id uint256
      */
-    function socialToNFTID(bytes memory socialID)
+    function socialToNFTID(string memory socialID)
         internal
         pure
         returns (uint256)
@@ -79,13 +75,12 @@ contract EcoNFT is ERC721, Ownable {
      * Parameters:
      *  - discordID/twitterID the social ids of the user
      */
-    function hasNotBeenMinted(bytes memory socialID)
+    function hasNotBeenMinted(string memory socialID)
         internal
         view
         returns (bool)
     {
-        return
-            _mintedAccounts[socialID] == address(0);
+        return _mintedAccounts[socialID] == address(0);
     }
 
     /**
@@ -98,10 +93,11 @@ contract EcoNFT is ERC721, Ownable {
      * Returns:
      *  - true if the signature is valid, false otherwise
      */
-    function _verifyMint(
-        bytes memory socialID,
-        bytes memory signature
-    ) internal view returns (bool) {
+    function _verifyMint(string memory socialID, bytes memory signature)
+        internal
+        view
+        returns (bool)
+    {
         bytes32 hash = getNftHash(socialID);
         return hash.recover(signature) == owner();
     }
@@ -110,14 +106,8 @@ contract EcoNFT is ERC721, Ownable {
      * Hashes the input parameters and hashes using keccak256,
      * attaches eth_sign_message for a validator verification
      */
-    function getNftHash(bytes memory socialID)
-        private
-        pure
-        returns (bytes32)
-    {
-        return
-            keccak256(abi.encodePacked(socialID))
-                .toEthSignedMessageHash();
+    function getNftHash(string memory socialID) private pure returns (bytes32) {
+        return keccak256(bytes(socialID)).toEthSignedMessageHash();
     }
 
     /**
