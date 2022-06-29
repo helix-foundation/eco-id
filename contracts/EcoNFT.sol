@@ -23,6 +23,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
      * Event for when an EcoNFT is minted
      */
     event MintEvent(address indexed addr);
+
     /**
      * Mapping the attested social account id with user address
      */
@@ -45,7 +46,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
         external
         returns (uint256)
     {
-        require(hasNotBeenMinted(socialID), "social has minted token");
+        require(_notMinted(socialID), "social has minted token");
         require(_verifyMint(socialID, signature), "signature did not match");
         uint256 tokenID = socialToNFTID(socialID);
         _safeMint(msg.sender, tokenID);
@@ -75,11 +76,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
      * Parameters:
      *  - discordID/twitterID the social ids of the user
      */
-    function hasNotBeenMinted(string memory socialID)
-        internal
-        view
-        returns (bool)
-    {
+    function _notMinted(string memory socialID) internal view returns (bool) {
         return _mintedAccounts[socialID] == address(0);
     }
 
@@ -98,7 +95,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
         view
         returns (bool)
     {
-        bytes32 hash = getNftHash(socialID);
+        bytes32 hash = _getNftHash(socialID);
         return hash.recover(signature) == owner();
     }
 
@@ -106,7 +103,11 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
      * Hashes the input parameters and hashes using keccak256,
      * attaches eth_sign_message for a validator verification
      */
-    function getNftHash(string memory socialID) private pure returns (bytes32) {
+    function _getNftHash(string memory socialID)
+        private
+        pure
+        returns (bytes32)
+    {
         return keccak256(bytes(socialID)).toEthSignedMessageHash();
     }
 
