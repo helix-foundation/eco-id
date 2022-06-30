@@ -12,22 +12,23 @@ describe("EcoNFT tests", async function () {
   const socialID = "twitterX1234321"
   let owner: SignerWithAddress, addr0: SignerWithAddress
   let nft: EcoNFT
+  let ownerString: string, addr0String: string
 
   describe("On nft transfer", async function () {
     before(async function () {
       await deployEcoNFT()
+      ownerString = await owner.getAddress()
+      addr0String = await addr0.getAddress()
     })
 
     it("should fail to transfer a nft", async function () {
-      const sig = await signMessage(socialID, owner)
-      const tokenID = await nft.connect(addr0).mintEcoNFT(socialID, sig)
+      const sig = await signMessage(socialID, addr0String, owner)
+      const tokenID = await nft
+        .connect(addr0)
+        .mintEcoNFT(socialID, addr0String, sig)
 
       await expect(
-        nft.transferFrom(
-          await addr0.getAddress(),
-          await owner.getAddress(),
-          tokenID.value
-        )
+        nft.transferFrom(addr0String, ownerString, tokenID.value)
       ).to.be.revertedWith("ERC721: transfer caller is not owner nor approved")
     })
   })
@@ -38,17 +39,17 @@ describe("EcoNFT tests", async function () {
     })
 
     it("should fail an invalid message", async function () {
-      const sig = await signMessage(socialID + "1", owner)
-      await expect(nft.mintEcoNFT(socialID, sig)).to.be.revertedWith(
-        "signature did not match"
-      )
+      const sig = await signMessage(socialID + "1", addr0String, owner)
+      await expect(
+        nft.mintEcoNFT(socialID, await addr0.getAddress(), sig)
+      ).to.be.revertedWith("signature did not match")
     })
 
     it("should fail an invalid owner signature", async function () {
-      const sig = await signMessage(socialID, addr0)
-      await expect(nft.mintEcoNFT(socialID, sig)).to.be.revertedWith(
-        "signature did not match"
-      )
+      const sig = await signMessage(socialID, addr0String, addr0)
+      await expect(
+        nft.mintEcoNFT(socialID, await addr0.getAddress(), sig)
+      ).to.be.revertedWith("signature did not match")
     })
   })
 
@@ -59,10 +60,12 @@ describe("EcoNFT tests", async function () {
     })
 
     it("should mint the nft token and emit a minting event", async function () {
-      const sig = await signMessage(socialID, owner)
+      const sig = await signMessage(socialID, addr0String, owner)
 
-      await expect(nft.connect(addr0).mintEcoNFT(socialID, sig))
-        .to.emit(nft, "MintEvent")
+      await expect(
+        nft.connect(addr0).mintEcoNFT(socialID, await addr0.getAddress(), sig)
+      )
+        .to.emit(nft, "Mint")
         .withArgs(await addr0.getAddress())
     })
 
@@ -79,10 +82,10 @@ describe("EcoNFT tests", async function () {
     })
 
     it("should fail to mint a new nft token for the same social id", async function () {
-      const sig = await signMessage(socialID, owner)
+      const sig = await signMessage(socialID, addr0String, owner)
 
       await expect(
-        nft.connect(addr0).mintEcoNFT(socialID, sig)
+        nft.connect(addr0).mintEcoNFT(socialID, await addr0.getAddress(), sig)
       ).to.be.revertedWith("social has minted token")
     })
   })

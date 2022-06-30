@@ -22,7 +22,8 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
     /**
      * Event for when an EcoNFT is minted
      */
-    event MintEvent(address indexed addr);
+    event Mint(address indexed addr);
+
     /**
      * Mapping the attested social account id with user address
      */
@@ -41,18 +42,22 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
      *  - discordID/twitterID the social ids of the user
      *  - signature is signature that we are validating comes from the owner of this contract, ie the minter account has signed off
      */
-    function mintEcoNFT(string memory socialID, bytes memory signature)
-        external
-        returns (uint256)
-    {
+    function mintEcoNFT(
+        string memory socialID,
+        address recipientAddress,
+        bytes memory signature
+    ) external returns (uint256) {
         require(hasNotBeenMinted(socialID), "social has minted token");
-        require(_verifyMint(socialID, signature), "signature did not match");
+        require(
+            _verifyMint(socialID, recipientAddress, signature),
+            "signature did not match"
+        );
         uint256 tokenID = socialToNFTID(socialID);
-        _safeMint(msg.sender, tokenID);
-        _mintedAccounts[socialID] = msg.sender;
-        _socialAccounts[msg.sender].push(socialID);
+        _safeMint(recipientAddress, tokenID);
+        _mintedAccounts[socialID] = recipientAddress;
+        _socialAccounts[recipientAddress].push(socialID);
 
-        emit MintEvent(msg.sender);
+        emit Mint(recipientAddress);
 
         return tokenID;
     }
@@ -87,18 +92,19 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
      * Verifies the signature supplied belongs to the owner address.
      *
      * Parameters:
-     *  - discordID/twitterID the social ids of the user
+     *  - socialID the social ids of the user
+     *  - recipientAddress the address of the user
      *  - signature is signature that we are validating comes from the owner of this contract, ie the minter account has signed off
      *
      * Returns:
      *  - true if the signature is valid, false otherwise
      */
-    function _verifyMint(string memory socialID, bytes memory signature)
-        internal
-        view
-        returns (bool)
-    {
-        bytes32 hash = getNftHash(socialID);
+    function _verifyMint(
+        string memory socialID,
+        address recipientAddress,
+        bytes memory signature
+    ) internal view returns (bool) {
+        bytes32 hash = getNftHash(socialID, recipientAddress);
         return hash.recover(signature) == owner();
     }
 
@@ -106,8 +112,14 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
      * Hashes the input parameters and hashes using keccak256,
      * attaches eth_sign_message for a validator verification
      */
-    function getNftHash(string memory socialID) private pure returns (bytes32) {
-        return keccak256(bytes(socialID)).toEthSignedMessageHash();
+    function getNftHash(string memory socialID, address recipientAddress)
+        private
+        pure
+        returns (bytes32)
+    {
+        return
+            keccak256(abi.encodePacked(socialID, recipientAddress))
+                .toEthSignedMessageHash();
     }
 
     /**
