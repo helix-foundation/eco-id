@@ -43,9 +43,9 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
      *  - signature is signature that we are validating comes from the owner of this contract, ie the minter account has signed off
      */
     function mintEcoNFT(
-        string memory socialID,
+        string calldata socialID,
         address recipientAddress,
-        bytes memory signature
+        bytes calldata signature
     ) external returns (uint256) {
         require(hasNotBeenMinted(socialID), "social has minted token");
         require(
@@ -66,7 +66,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
      * Returns the NTF ID for a given social id that we have linked the user too. The function takes the
      * hash of the social id and returns it as a token id uint256
      */
-    function socialToNFTID(string memory socialID)
+    function socialToNFTID(string calldata socialID)
         internal
         pure
         returns (uint256)
@@ -80,7 +80,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
      * Parameters:
      *  - discordID/twitterID the social ids of the user
      */
-    function hasNotBeenMinted(string memory socialID)
+    function hasNotBeenMinted(string calldata socialID)
         internal
         view
         returns (bool)
@@ -100,9 +100,9 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
      *  - true if the signature is valid, false otherwise
      */
     function _verifyMint(
-        string memory socialID,
+        string calldata socialID,
         address recipientAddress,
-        bytes memory signature
+        bytes calldata signature
     ) internal view returns (bool) {
         bytes32 hash = getNftHash(socialID, recipientAddress);
         return hash.recover(signature) == owner();
@@ -112,7 +112,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
      * Hashes the input parameters and hashes using keccak256,
      * attaches eth_sign_message for a validator verification
      */
-    function getNftHash(string memory socialID, address recipientAddress)
+    function getNftHash(string calldata socialID, address recipientAddress)
         private
         pure
         returns (bytes32)
