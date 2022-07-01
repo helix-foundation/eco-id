@@ -22,7 +22,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
     /**
      * Event for when an EcoNFT is minted
      */
-    event MintEvent(address indexed addr);
+    event Mint(address indexed addr);
 
     /**
      * Mapping the attested social account id with user address
@@ -42,18 +42,23 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
      *  - discordID/twitterID the social ids of the user
      *  - signature is signature that we are validating comes from the owner of this contract, ie the minter account has signed off
      */
-    function mintEcoNFT(string memory socialID, bytes memory signature)
-        external
-        returns (uint256)
-    {
-        require(_notMinted(socialID), "social has minted token");
-        require(_verifyMint(socialID, signature), "signature did not match");
-        uint256 tokenID = socialToNFTID(socialID);
-        _safeMint(msg.sender, tokenID);
-        _mintedAccounts[socialID] = msg.sender;
-        _socialAccounts[msg.sender].push(socialID);
+    function mintEcoNFT(
+        string calldata socialID,
+        address recipientAddress,
+        bytes calldata signature
+    ) external returns (uint256) {
+        require(hasNotBeenMinted(socialID), "social has minted token");
+        require(
+            _verifyMint(socialID, recipientAddress, signature),
+            "signature did not match"
+        );
 
-        emit MintEvent(msg.sender);
+        uint256 tokenID = socialToNFTID(socialID);
+        _safeMint(recipientAddress, tokenID);
+        _mintedAccounts[socialID] = recipientAddress;
+        _socialAccounts[recipientAddress].push(socialID);
+
+        emit Mint(recipientAddress);
 
         return tokenID;
     }
@@ -62,7 +67,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
      * Returns the NTF ID for a given social id that we have linked the user too. The function takes the
      * hash of the social id and returns it as a token id uint256
      */
-    function socialToNFTID(string memory socialID)
+    function socialToNFTID(string calldata socialID)
         internal
         pure
         returns (uint256)
@@ -76,7 +81,11 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
      * Parameters:
      *  - discordID/twitterID the social ids of the user
      */
-    function _notMinted(string memory socialID) internal view returns (bool) {
+    function hasNotBeenMinted(string calldata socialID)
+        internal
+        view
+        returns (bool)
+    {
         return _mintedAccounts[socialID] == address(0);
     }
 
@@ -84,18 +93,19 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
      * Verifies the signature supplied belongs to the owner address.
      *
      * Parameters:
-     *  - discordID/twitterID the social ids of the user
+     *  - socialID the social ids of the user
+     *  - recipientAddress the address of the user
      *  - signature is signature that we are validating comes from the owner of this contract, ie the minter account has signed off
      *
      * Returns:
      *  - true if the signature is valid, false otherwise
      */
-    function _verifyMint(string memory socialID, bytes memory signature)
-        internal
-        view
-        returns (bool)
-    {
-        bytes32 hash = _getNftHash(socialID);
+    function _verifyMint(
+        string calldata socialID,
+        address recipientAddress,
+        bytes calldata signature
+    ) internal view returns (bool) {
+        bytes32 hash = getNftHash(socialID, recipientAddress);
         return hash.recover(signature) == owner();
     }
 
@@ -103,12 +113,14 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), Ownable {
      * Hashes the input parameters and hashes using keccak256,
      * attaches eth_sign_message for a validator verification
      */
-    function _getNftHash(string memory socialID)
+    function getNftHash(string calldata socialID, address recipientAddress)
         private
         pure
         returns (bytes32)
     {
-        return keccak256(bytes(socialID)).toEthSignedMessageHash();
+        return
+            keccak256(abi.encodePacked(socialID, recipientAddress))
+                .toEthSignedMessageHash();
     }
 
     /**
