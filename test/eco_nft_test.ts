@@ -2,7 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
 import { ethers } from "hardhat"
 import { EcoNFT } from "../typechain"
-import { signMessage } from "./utils/sign"
+import { signMessage, mintNFT } from "./utils/sign"
 
 /**
  * Tests that the EcoNFT contract performs correctly on minting of nft's
@@ -60,11 +60,7 @@ describe("EcoNFT tests", async function () {
     })
 
     it("should mint the nft token and emit a minting event", async function () {
-      const sig = await signMessage(socialID, addr0String, owner)
-
-      await expect(
-        nft.connect(addr0).mintEcoNFT(socialID, await addr0.getAddress(), sig)
-      )
+      await expect(mintNFT(socialID, addr0, owner, nft))
         .to.emit(nft, "Mint")
         .withArgs(await addr0.getAddress())
     })
