@@ -5,8 +5,6 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import "hardhat/console.sol";
-
 /**
  * This is the Eco NFT for linking a user's discord and twitter ids on chain. The owner of this contract will issue a signed tx
  * on behalf of the user once they authenticate their discord and twitter ids. The user can then submit the tx to this contract and
