@@ -20,106 +20,122 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     /**
      * Event for when an EcoNFT is minted
      */
-    event Mint(address indexed addr, address indexed minterAddress);
+    event Mint(
+        address indexed recipient,
+        string indexed claim,
+        uint256 tokenID
+    );
+
+    struct VerifiedClaim {
+        string claim;
+        uint256 tokenID;
+        address[] verifiers;
+        mapping(address => bool) verifierMap;
+    }
+
+    struct TokenClaim {
+        address recipient;
+        string claim;
+    }
 
     /**
      * Event for when an EcoNFT is minted
      */
-    uint256 public _tokenIndex = 0;
-
-    /**
-     * Mapping the attested social account id with user address
-     */
-    mapping(string => address[]) public _mintedAccounts;
+    uint256 public _tokenIDIndex = 1;
 
     /**
      * Mapping the user address with all social accounts they have
      */
-    mapping(address => string[]) public _socialAccounts;
+    mapping(address => mapping(string => VerifiedClaim)) public _verifiedClaims;
 
     /**
-     * The token contract that is used for fee payments to the minter address 
+     * Mapping the tokenID of minted tokens with the claim they represent. Necessary as we can't fetch the claim
+     * directly from the _verifiedClaims for a given tokenID
+     */
+    mapping(uint256 => TokenClaim) public _tokenClaimIDs;
+
+    /**
+     * Mapping of the hash(claim, address) to the address
+     */
+    mapping(string => address) public _claimAddresses;
+
+    /**
+     * The token contract that is used for fee payments to the minter address
      */
     ERC20 public immutable _token;
 
-    constructor(ERC20 token){
+    constructor(ERC20 token) {
         _token = token;
+    }
+
+    /**
+     * Check if the claim has been verified by the given verifier for the given address
+     *
+     * @param recipient the address of the associated claim
+     * @param verifier the address of the verifier for the claim on the recipient address
+     * @param claim the claim that should be verified
+     */
+    function isClaimVerified(
+        address recipient,
+        address verifier,
+        string calldata claim
+    ) external view returns (bool) {
+        return _verifiedClaims[recipient][claim].verifierMap[verifier];
     }
 
     /**
      * Mints an EcoNFT if the discord and twitter IDs have not been claimed yet, and only when the owener of this EcoNFT contract
      * has signed off on the minting
      *
-     * @param socialID the social ids of the user
+     * @param claim the claim that is beign verified
      * @param feeAmount the cost to mint the nft that is sent back to the minterAddress
-     * @param recipientAddress the address of the recipient of the newly minted nft
-     * @param minterAddress the address of the minter for the nft, that has verified the socialID
+     * @param recipient the address of the recipient of the newly minted nft
+     * @param verifier the address of the minter for the nft, that has verified the socialID
      * @param signature signature that we are validating comes from the minterAddress
      */
-    function mintEcoNFT(
-        string calldata socialID,
+    // multi source array as meta
+    function register(
+        string calldata claim,
         uint256 feeAmount,
-        address recipientAddress,
-        address minterAddress,
+        address recipient,
+        address verifier,
         bytes calldata signature
-    ) external returns (uint256) {
-        require(hasNotBeenMinted(socialID, minterAddress), "social has minted token");
+    ) external {
+        require(bytes(claim).length == 0, "invalid empty claim");
         require(
-            _verifyMint(
-                socialID,
-                feeAmount,
-                recipientAddress,
-                minterAddress,
-                signature
-            ),
+            _verifyMint(claim, feeAmount, recipient, verifier, signature),
             "signature did not match"
         );
 
-        uint256 tokenID = _tokenIndex++;
-        _safeMint(recipientAddress, tokenID);
-        _mintedAccounts[socialID].push(recipientAddress);
-        _socialAccounts[recipientAddress].push(socialID);
+        VerifiedClaim storage vclaim = _verifiedClaims[recipient][claim];
+        vclaim.claim = claim;
+        require(!vclaim.verifierMap[verifier], "duplicate varifier");
+        vclaim.verifiers.push(verifier);
+        vclaim.verifierMap[verifier] = true;
 
-        if(feeAmount > 0){    
-            require(_token.transfer(minterAddress, feeAmount), "fee payment failed");
+        if (feeAmount > 0) {
+            require(_token.transfer(verifier, feeAmount), "fee payment failed");
         }
-
-        emit Mint(recipientAddress, minterAddress);
-
-        return tokenID;
     }
 
     /**
-     * Returns the NTF ID for a given social id that we have linked the user too. The function takes the
-     * hash of the social id and returns it as a token id uint256
+     * Mints the nft for the claim
      *
-     * @param socialID the social ids of the user
+     * @param recipient the address of the recipient for the nft
+     * @param claim the claim that is being associated to the nft
+     *
      */
-    function socialToNFTID(string calldata socialID)
-        internal
-        pure
-        returns (uint256)
-    {
-        return uint256(keccak256(abi.encodePacked(socialID)));
-    }
+    function mintNFT(address recipient, string memory claim) external {
+        VerifiedClaim storage vclaim = _verifiedClaims[recipient][claim];
+        require(vclaim.tokenID == 0, "token already minted for claim");
 
-    /**
-     * Checks that the social id has not had an EcoNFT already minted
-     *
-     * @param socialID the social ids of the user
-     */
-    function hasNotBeenMinted(string calldata socialID, address minterAddress)
-        internal
-        view
-        returns (bool)
-    {
-        address[] memory verifiers = _mintedAccounts[socialID];
-        for(uint256 i = 0; i < verifiers.length; i++){
-            if(verifiers[i] == minterAddress){
-                return false;
-            }
-        }
-        return true;
+        uint256 tokenID = _tokenIDIndex++;
+
+        vclaim.tokenID = tokenID;
+        _tokenClaimIDs[tokenID] = TokenClaim(recipient, claim);
+        _safeMint(recipient, tokenID);
+
+        emit Mint(recipient, claim, tokenID);
     }
 
     /**
@@ -148,17 +164,17 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * Hashes the input parameters and hashes using keccak256,
      * attaches eth_sign_message for a validator verification
      *
-     * @param socialID the social ids of the user
+     * @param claim the claim being attested to
      * @param feeAmount the cost to mint the nft that is sent back to the minterAddress
-     * @param recipientAddress the address of the user that gets the nft
+     * @param recipient the address of the user that gets the nft
      */
     function getNftHash(
-        string calldata socialID,
+        string calldata claim,
         uint256 feeAmount,
-        address recipientAddress
+        address recipient
     ) private pure returns (bytes32) {
         return
-            keccak256(abi.encodePacked(socialID, feeAmount, recipientAddress))
+            keccak256(abi.encodePacked(claim, feeAmount, recipient))
                 .toEthSignedMessageHash();
     }
 
@@ -179,20 +195,20 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     /**
      * @dev See {IERC721Metadata-tokenURI}.
      */
-    function tokenURI(uint256 tokenId)
+    function tokenURI(uint256 tokenID)
         public
         view
         virtual
         override
         returns (string memory)
     {
-        require(
-            _exists(tokenId),
-            "ERC721Metadata: URI query for nonexistent token"
-        );
+        require(_exists(tokenID), "nonexistent token");
 
-        // string memory baseURI = _baseURI();
-        // return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString())) : "";
-        return "";
+        TokenClaim storage tokenClaim = _tokenClaimIDs[tokenID];
+        VerifiedClaim storage vclaim = _verifiedClaims[tokenClaim.recipient][
+            tokenClaim.claim
+        ];
+
+        return string(abi.encodePacked(vclaim.verifiers));
     }
 }
