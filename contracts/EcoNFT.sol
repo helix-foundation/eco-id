@@ -129,7 +129,13 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
             "verifier not approved"
         );
         require(
-            _verifyRegistration(claim, feeAmount, recipient, verifier, verifySig),
+            _verifyRegistration(
+                claim,
+                feeAmount,
+                recipient,
+                verifier,
+                verifySig
+            ),
             "signature did not match"
         );
 
