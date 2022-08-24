@@ -5,17 +5,31 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
+import "hardhat/console.sol";
+
 /**
- * This is the Eco NFT for linking a user's discord and twitter ids on chain. The owner of this contract will issue a signed tx
- * on behalf of the user once they authenticate their discord and twitter ids. The user can then submit the tx to this contract and
- * mint an EcoNFT. The issued NFT is soulbound to the address it was issue to, and cannot be transfered. Only one EcoNFT can ever be
- * minted per social account.
+ * This is the EcoNFT for verifying an arbitraty claim.
  */
 contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     /**
      * Use for signarture recovery and verification on minting of EcoNFT
      */
     using ECDSA for bytes32;
+
+    /**
+     * The default limit for the tokenURI meta that reads from the claim verifiers
+     */
+    uint256 public constant META_LIMIT = 50;
+
+    /**
+     * Event for when a claim is verified for a recipient
+     */
+    event RegisterClaim(
+        string indexed claim,
+        uint256 feeAmount,
+        address indexed recipient,
+        address indexed verifier
+    );
 
     /**
      * Event for when an EcoNFT is minted
@@ -26,6 +40,9 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         uint256 tokenID
     );
 
+    /**
+     * Structure for storing a verified claim
+     */
     struct VerifiedClaim {
         string claim;
         uint256 tokenID;
@@ -33,6 +50,10 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         mapping(address => bool) verifierMap;
     }
 
+    /**
+     * Structure for storing the relation between a tokenID and the address and claim
+     * that they are linked to
+     */
     struct TokenClaim {
         address recipient;
         string claim;
@@ -101,7 +122,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         address verifier,
         bytes calldata signature
     ) external {
-        require(bytes(claim).length == 0, "invalid empty claim");
+        require(bytes(claim).length != 0, "invalid empty claim");
         require(
             _verifyMint(claim, feeAmount, recipient, verifier, signature),
             "signature did not match"
@@ -114,8 +135,13 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         vclaim.verifierMap[verifier] = true;
 
         if (feeAmount > 0) {
-            require(_token.transfer(verifier, feeAmount), "fee payment failed");
+            require(
+                _token.transferFrom(recipient, verifier, feeAmount),
+                "fee payment failed"
+            );
         }
+
+        emit RegisterClaim(claim, feeAmount, recipient, verifier);
     }
 
     /**
@@ -124,18 +150,63 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * @param recipient the address of the recipient for the nft
      * @param claim the claim that is being associated to the nft
      *
+     * @return tokenID the ID of the nft
      */
-    function mintNFT(address recipient, string memory claim) external {
+    function mintNFT(address recipient, string memory claim)
+        external
+        returns (uint256 tokenID)
+    {
         VerifiedClaim storage vclaim = _verifiedClaims[recipient][claim];
+        require(bytes(vclaim.claim).length != 0, "nft claim non-existant");
         require(vclaim.tokenID == 0, "token already minted for claim");
 
-        uint256 tokenID = _tokenIDIndex++;
+        tokenID = _tokenIDIndex++;
 
         vclaim.tokenID = tokenID;
         _tokenClaimIDs[tokenID] = TokenClaim(recipient, claim);
         _safeMint(recipient, tokenID);
 
         emit Mint(recipient, claim, tokenID);
+
+        return tokenID;
+    }
+
+    /**
+     * @dev See {IERC721Metadata-tokenURI}.
+     */
+    function tokenURI(uint256 tokenID)
+        public
+        view
+        virtual
+        override
+        returns (string memory)
+    {
+        return tokenURICursor(tokenID, 0, META_LIMIT);
+    }
+
+    function tokenURICursor(
+        uint256 tokenID,
+        uint256 cursor,
+        uint256 limit
+    ) public view virtual returns (string memory) {
+        require(_exists(tokenID), "non-existent token");
+
+        TokenClaim storage tokenClaim = _tokenClaimIDs[tokenID];
+        VerifiedClaim storage vclaim = _verifiedClaims[tokenClaim.recipient][
+            tokenClaim.claim
+        ];
+
+        //get the ending position
+        uint256 readEnd = cursor + limit;
+        uint256 vl = vclaim.verifiers.length;
+        uint256 end = vl >= readEnd ? vl : readEnd;
+
+        string memory meta = "[";
+        for (uint256 i = cursor; i < end; i++) {
+            //   meta
+        }
+        return Strings.toHexString(uint256(uint160(vclaim.verifiers[0])), 20);
+        // return string(vclaim.verifiers[0]);
     }
 
     /**
@@ -161,6 +232,20 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     }
 
     /**
+     * @dev Disables the transferFrom and safeTransferFrom calls in the parent contract bounding this token to
+     * the original address that it was minted for
+     */
+    function _isApprovedOrOwner(address, uint256)
+        internal
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return false;
+    }
+
+    /**
      * Hashes the input parameters and hashes using keccak256,
      * attaches eth_sign_message for a validator verification
      *
@@ -176,39 +261,5 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         return
             keccak256(abi.encodePacked(claim, feeAmount, recipient))
                 .toEthSignedMessageHash();
-    }
-
-    /**
-     * @dev Disables the transferFrom and safeTransferFrom calls in the parent contract bounding this token to
-     * the original address that it was minted for
-     */
-    function _isApprovedOrOwner(address, uint256)
-        internal
-        view
-        virtual
-        override
-        returns (bool)
-    {
-        return false;
-    }
-
-    /**
-     * @dev See {IERC721Metadata-tokenURI}.
-     */
-    function tokenURI(uint256 tokenID)
-        public
-        view
-        virtual
-        override
-        returns (string memory)
-    {
-        require(_exists(tokenID), "nonexistent token");
-
-        TokenClaim storage tokenClaim = _tokenClaimIDs[tokenID];
-        VerifiedClaim storage vclaim = _verifiedClaims[tokenClaim.recipient][
-            tokenClaim.claim
-        ];
-
-        return string(abi.encodePacked(vclaim.verifiers));
     }
 }
