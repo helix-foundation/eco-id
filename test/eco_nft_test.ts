@@ -9,7 +9,7 @@ import { signRegistrationMessage } from "./utils/sign"
  * Tests that the EcoNFT contract performs correctly on minting of nft's
  * Note, check encryption https://dev.to/rounakbanik/tutorial-digital-signatures-nft-allowlists-eeb
  */
-describe.only("EcoNFT tests", async function () {
+describe("EcoNFT tests", async function () {
   const claim = "twitterX1234321"
   let owner: SignerWithAddress, addr0: SignerWithAddress
   let erc20: ERC20Test
