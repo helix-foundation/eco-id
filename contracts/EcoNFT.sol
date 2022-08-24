@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.15;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -183,6 +183,9 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     }
 
     /**
+     * Returns the verifier addresses of a claim for a recipient in a comma separated string.
+     * Limits to META_LIMIT(50). See tokenURICursor if you need to paginate past that number
+     *
      * @dev See {IERC721Metadata-tokenURI}.
      */
     function tokenURI(uint256 tokenID)
@@ -195,6 +198,10 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         return tokenURICursor(tokenID, 0, META_LIMIT);
     }
 
+    /**
+     * Returns the verifier addresses of a claim for a recipient in a comma separated string.
+     * Use regular cursor pagination.
+     */
     function tokenURICursor(
         uint256 tokenID,
         uint256 cursor,
@@ -208,16 +215,24 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         ];
 
         //get the ending position
+        address[] storage verifiers = vclaim.verifiers;
         uint256 readEnd = cursor + limit;
-        uint256 vl = vclaim.verifiers.length;
-        uint256 end = vl >= readEnd ? vl : readEnd;
+        uint256 vl = verifiers.length;
+        uint256 end = vl <= readEnd ? vl : readEnd;
 
-        string memory meta = "[";
+        string memory meta = "";
         for (uint256 i = cursor; i < end; i++) {
-            //   meta
+            string memory addr = Strings.toHexString(
+                uint256(uint160(verifiers[i])),
+                20
+            );
+            if (i == cursor) {
+                meta = string.concat(meta, addr);
+            } else {
+                meta = string.concat(meta, ",", addr);
+            }
         }
-        return Strings.toHexString(uint256(uint160(vclaim.verifiers[0])), 20);
-        // return string(vclaim.verifiers[0]);
+        return meta;
     }
 
     /**

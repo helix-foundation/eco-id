@@ -272,32 +272,72 @@ describe("EcoNFT tests", async function () {
   })
 
   describe("On NFT metadata", async function () {
-    // test the metadata ur that we get and that it increases with more verifiers
-    it("should revert on metadata for non-existant token", async function () {
-      await expect(ecoNft.tokenURI(1)).to.be.revertedWith("non-existent token")
-    })
+    let addr1: SignerWithAddress
 
-    it.skip("should dispay the verifier of a claim", async function () {
-      const [approvSig, verifySig] = await signRegistrationMessage(
+    beforeEach(async function () {
+      ;[, , addr1] = await ethers.getSigners()
+      await payFee(addr0, feeAmount * 2)
+
+      const [approvSig0, verifySig0] = await signRegistrationMessage(
         claim,
         feeAmount,
         addr0,
         owner
       )
-
-      await payFee(addr0, feeAmount)
+      const [approvSig1, verifySig1] = await signRegistrationMessage(
+        claim,
+        feeAmount,
+        addr0,
+        addr1
+      )
       await ecoNft.register(
         claim,
         feeAmount,
         addr0.address,
         owner.address,
-        approvSig,
-        verifySig
+        approvSig0,
+        verifySig0
+      )
+      await ecoNft.register(
+        claim,
+        feeAmount,
+        addr0.address,
+        addr1.address,
+        approvSig1,
+        verifySig1
       )
       await expect(ecoNft.mintNFT(addr0.address, claim))
-      // const meta = await ecoNft.face(1)
+    })
+
+    it("should revert on metadata for non-existant token", async function () {
+      await expect(ecoNft.tokenURI(10)).to.be.revertedWith("non-existent token")
+    })
+
+    it("should dispay the verifier of a claim", async function () {
       const meta = await ecoNft.tokenURI(1)
-      console.log(meta)
+      const metaArray = meta.split(",")
+
+      expect(metaArray[0]).to.equal(owner.address.toLocaleLowerCase())
+      expect(metaArray[1]).to.equal(addr1.address.toLocaleLowerCase())
+      expect(metaArray.length).to.equal(2)
+    })
+
+    it("should paginate", async function () {
+      let meta = await ecoNft.tokenURICursor(1, 0, 1)
+      let metaArray = meta.split(",")
+      expect(metaArray[0]).to.equal(owner.address.toLocaleLowerCase())
+      expect(metaArray.length).to.equal(1)
+
+      meta = await ecoNft.tokenURICursor(1, 1, 1)
+      metaArray = meta.split(",")
+      expect(metaArray[0]).to.equal(addr1.address.toLocaleLowerCase())
+      expect(metaArray.length).to.equal(1)
+
+      meta = await ecoNft.tokenURICursor(1, 0, 10)
+      metaArray = meta.split(",")
+      expect(metaArray[0]).to.equal(owner.address.toLocaleLowerCase())
+      expect(metaArray[1]).to.equal(addr1.address.toLocaleLowerCase())
+      expect(metaArray.length).to.equal(2)
     })
   })
 
