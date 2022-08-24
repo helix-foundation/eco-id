@@ -3,13 +3,13 @@ import { expect } from "chai"
 import { ethers } from "hardhat"
 import { EcoNFT, ERC20Test } from "../typechain"
 import { deployEcoNFT } from "./utils/fixtures"
-import { signMessage } from "./utils/sign"
+import { signRegistrationMessage } from "./utils/sign"
 
 /**
  * Tests that the EcoNFT contract performs correctly on minting of nft's
  * Note, check encryption https://dev.to/rounakbanik/tutorial-digital-signatures-nft-allowlists-eeb
  */
-describe("EcoNFT tests", async function () {
+describe.only("EcoNFT tests", async function () {
   const claim = "twitterX1234321"
   let owner: SignerWithAddress, addr0: SignerWithAddress
   let erc20: ERC20Test
@@ -22,11 +22,11 @@ describe("EcoNFT tests", async function () {
   })
   describe("On nft transfer", async function () {
     it("should not allow the transfer of nft's", async function () {
-      const sig = await signMessage(claim, feeAmount, addr0.address, owner)
+      const [approvSig, verifySig] = await signRegistrationMessage(claim, feeAmount, addr0, owner)
 
       await payFee(addr0, feeAmount)
 
-      await ecoNft.register(claim, feeAmount, addr0.address, owner.address, sig)
+      await ecoNft.register(claim, feeAmount, addr0.address, owner.address, approvSig, verifySig)
 
       const tokenID = 1
       await expect(ecoNft.mintNFT(addr0.address, claim))
@@ -41,60 +41,80 @@ describe("EcoNFT tests", async function () {
 
   describe("On registration", async function () {
     it("should fail registration on empty claim", async function () {
-      const sig = await signMessage(claim, feeAmount, addr0.address, owner)
+      const [approvSig, verifySig] = await signRegistrationMessage(claim, feeAmount, addr0, owner)
 
       await expect(
-        ecoNft.register("", feeAmount, addr0.address, owner.address, sig)
+        ecoNft.register("", feeAmount, addr0.address, owner.address, approvSig, verifySig)
       ).to.be.revertedWith("invalid empty claim")
     })
 
-    it("should fail an invalid signature", async function () {
-      const sig = await signMessage(
-        claim + "1",
+    it("should fail an invalid approval signature", async function () {
+      const [approvSig, verifySig] = await signRegistrationMessage(
+        claim,
         feeAmount,
-        addr0.address,
+        addr0,
         owner
       )
       await expect(
-        ecoNft.register(claim, feeAmount, addr0.address, owner.address, sig)
+        ecoNft.register(claim, feeAmount, addr0.address, owner.address, verifySig, verifySig)
+      ).to.be.revertedWith("verifier not approved")
+    })
+
+    it("should fail an invalid verify signature", async function () {
+      const approvSig = (await signRegistrationMessage(
+        claim,
+        feeAmount,
+        addr0,
+        owner
+      ))[0]
+
+      const verifySig = (await signRegistrationMessage(
+        claim + "1",
+        feeAmount,
+        addr0,
+        owner
+      ))[1]
+      
+      await expect(
+        ecoNft.register(claim, feeAmount, addr0.address, owner.address, approvSig, verifySig)
       ).to.be.revertedWith("signature did not match")
     })
 
     it("should fail on payment transfer failure", async function () {
-      const sig = await signMessage(claim, feeAmount, addr0.address, owner)
+      const [approvSig, verifySig] = await signRegistrationMessage(claim, feeAmount, addr0, owner)
       await expect(
-        ecoNft.register(claim, feeAmount, addr0.address, owner.address, sig)
+        ecoNft.register(claim, feeAmount, addr0.address, owner.address, approvSig, verifySig)
       ).to.be.revertedWith("ERC20: insufficient allowance")
     })
 
     it("should register and emit on valid registration", async function () {
-      const sig = await signMessage(claim, feeAmount, addr0.address, owner)
+      const [approvSig, verifySig] = await signRegistrationMessage(claim, feeAmount, addr0, owner)
 
       await payFee(addr0, feeAmount)
       await expect(
-        ecoNft.register(claim, feeAmount, addr0.address, owner.address, sig)
+        ecoNft.register(claim, feeAmount, addr0.address, owner.address, approvSig, verifySig)
       )
         .to.emit(ecoNft, "RegisterClaim")
         .withArgs(claim, feeAmount, addr0.address, owner.address)
     })
 
     it("should fail on duplicate verifier on a claim", async function () {
-      const sig = await signMessage(claim, feeAmount, addr0.address, owner)
+      const [approvSig, verifySig] = await signRegistrationMessage(claim, feeAmount, addr0, owner)
 
       await payFee(addr0, feeAmount)
-      await ecoNft.register(claim, feeAmount, addr0.address, owner.address, sig)
+      await ecoNft.register(claim, feeAmount, addr0.address, owner.address, approvSig, verifySig)
 
       await expect(
-        ecoNft.register(claim, feeAmount, addr0.address, owner.address, sig)
+        ecoNft.register(claim, feeAmount, addr0.address, owner.address, approvSig, verifySig)
       ).to.be.revertedWith("duplicate varifier")
     })
   })
   describe("On NFT minting", async function () {
     beforeEach(async function () {
-      const sig = await signMessage(claim, feeAmount, addr0.address, owner)
+      const [approvSig, verifySig] = await signRegistrationMessage(claim, feeAmount, addr0, owner)
 
       await payFee(addr0, feeAmount)
-      await ecoNft.register(claim, feeAmount, addr0.address, owner.address, sig)
+      await ecoNft.register(claim, feeAmount, addr0.address, owner.address, approvSig, verifySig)
     })
 
     it("should revert if there is no verified claim", async function () {
@@ -131,11 +151,11 @@ describe("EcoNFT tests", async function () {
 
       // register new claim
       const claim2 = claim + "1"
-      const sig = await signMessage(claim2, feeAmount, addr0.address, owner)
+      const [approvSig, verifySig] = await signRegistrationMessage(claim2, feeAmount, addr0, owner)
 
       await payFee(addr0, feeAmount)
       await expect(
-        ecoNft.register(claim2, feeAmount, addr0.address, owner.address, sig)
+        ecoNft.register(claim2, feeAmount, addr0.address, owner.address, approvSig, verifySig)
       )
         .to.emit(ecoNft, "RegisterClaim")
         .withArgs(claim2, feeAmount, addr0.address, owner.address)
@@ -153,10 +173,10 @@ describe("EcoNFT tests", async function () {
     })
 
     it.skip("should dispay the verifier of a claim", async function () {
-      const sig = await signMessage(claim, feeAmount, addr0.address, owner)
+      const [approvSig, verifySig] = await signRegistrationMessage(claim, feeAmount, addr0, owner)
 
       await payFee(addr0, feeAmount)
-      await ecoNft.register(claim, feeAmount, addr0.address, owner.address, sig)
+      await ecoNft.register(claim, feeAmount, addr0.address, owner.address, approvSig, verifySig)
       await expect(ecoNft.mintNFT(addr0.address, claim))
       // const meta = await ecoNft.face(1)
       const meta = await ecoNft.tokenURI(1)
