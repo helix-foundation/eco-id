@@ -5,8 +5,6 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import "hardhat/console.sol";
-
 /**
  * This is the EcoNFT for verifying an arbitraty claim.
  */
@@ -15,6 +13,17 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * Use for signarture recovery and verification on minting of EcoNFT
      */
     using ECDSA for bytes32;
+
+    /**
+     * The static web url for the nft
+     */
+    string public constant NFT_EXTERNAL_URL = "https://eco.com/";
+
+    /**
+     * The static image url for all the nft's, todo update to real link
+     */
+    string public constant NFT_IMAGE_URL =
+        "https://media4.giphy.com/media/iF0sIlvGhJ5G5WCWIx/giphy.gif?cid=ecf05e47v3jsp4s8gj3u8li6kmfx2d6f98si1fn3o8hjg0d7&rid=giphy.gif&ct=g";
 
     /**
      * The default limit for the tokenURI meta that reads from the claim verifiers
@@ -179,7 +188,9 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * Returns the verifier addresses of a claim for a recipient in a comma separated string.
      * Limits to META_LIMIT(50). See tokenURICursor if you need to paginate past that number
      *
-     * @dev See {IERC721Metadata-tokenURI}.
+     * @param tokenID the id of the nft
+     *
+     * @return
      */
     function tokenURI(uint256 tokenID)
         public
@@ -192,14 +203,20 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     }
 
     /**
-     * Returns the verifier addresses of a claim for a recipient in a comma separated string.
-     * Use regular cursor pagination.
+     * Constructs and returns the metadata ERC-721 schema json for the NFT.
+     * Uses regular cursor pagination in case the verifiers array for the claim is large.
+     *
+     * @param tokenID the id of the nft
+     * @param cursor the pagination cursor for the verifiers array
+     * @param limit  the pagination limit for the verifiers array
+     *
+     * @return meta the metadata as a json array
      */
     function tokenURICursor(
         uint256 tokenID,
         uint256 cursor,
         uint256 limit
-    ) public view virtual returns (string memory) {
+    ) public view virtual returns (string memory meta) {
         require(_exists(tokenID), "non-existent token");
 
         TokenClaim storage tokenClaim = _tokenClaimIDs[tokenID];
@@ -207,25 +224,72 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
             tokenClaim.claim
         ];
 
+        meta = _metaPrefix(vclaim.claim);
+        meta = string.concat(
+            meta,
+            _metaVerifierArray(vclaim.verifiers, cursor, limit),
+            "]}}"
+        );
+    }
+
+    /**
+     * Constructs the first portion of the nft metadata
+     *
+     * @param claim the claim being verified
+     *
+     * @return meta the partially constructed json
+     */
+    function _metaPrefix(string storage claim)
+        internal
+        pure
+        returns (string memory meta)
+    {
+        meta = "{";
+        meta = string.concat(meta, '"description":', '"EcoNFT",');
+        meta = string.concat(
+            meta,
+            '"external_url":',
+            '"',
+            NFT_EXTERNAL_URL,
+            '",'
+        );
+        meta = string.concat(meta, '"image":', '"', NFT_IMAGE_URL, '",');
+        meta = string.concat(meta, '"name":', '"', claim, '",');
+        meta = string.concat(meta, '"attributes":{"type": "array", "value": [');
+    }
+
+    /**
+     * Constructs the verifier address array portion of the nft metadata
+     *
+     * @param verifiers the claim being verified
+     * @param cursor the pagination cursor for the verifiers array
+     * @param limit  the pagination limit for the verifiers array
+     *
+     * @return meta the partially constructed json
+     */
+    function _metaVerifierArray(
+        address[] storage verifiers,
+        uint256 cursor,
+        uint256 limit
+    ) internal view returns (string memory meta) {
         //get the ending position
-        address[] storage verifiers = vclaim.verifiers;
         uint256 readEnd = cursor + limit;
         uint256 vl = verifiers.length;
         uint256 end = vl <= readEnd ? vl : readEnd;
 
-        string memory meta = "";
+        uint256 lastPoint = end - 1;
         for (uint256 i = cursor; i < end; i++) {
             string memory addr = Strings.toHexString(
                 uint256(uint160(verifiers[i])),
                 20
             );
-            if (i == cursor) {
-                meta = string.concat(meta, addr);
+
+            if (i < lastPoint) {
+                meta = string.concat(meta, '"', addr, '",');
             } else {
-                meta = string.concat(meta, ",", addr);
+                meta = string.concat(meta, '"', addr, '"');
             }
         }
-        return meta;
     }
 
     /**

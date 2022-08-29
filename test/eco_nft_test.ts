@@ -2,7 +2,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
 import { ethers } from "hardhat"
 import { EcoNFT, ERC20Test } from "../typechain"
-import { deployEcoNFT } from "./utils/fixtures"
+import { deployEcoNFT, Meta } from "./utils/fixtures"
 import { signRegistrationMessage } from "./utils/sign"
 
 /**
@@ -356,30 +356,45 @@ describe("EcoNFT tests", async function () {
     })
 
     it("should dispay the verifier of a claim", async function () {
-      const meta = await ecoNft.tokenURI(1)
-      const metaArray = meta.split(",")
+      const meta: Meta = JSON.parse(await ecoNft.tokenURI(1))
 
-      expect(metaArray[0]).to.equal(owner.address.toLocaleLowerCase())
-      expect(metaArray[1]).to.equal(addr1.address.toLocaleLowerCase())
-      expect(metaArray.length).to.equal(2)
+      expect(meta.description).to.equal("EcoNFT")
+      expect(meta.external_url).to.equal("https://eco.com/")
+      expect(meta.image).to.equal(
+        "https://media4.giphy.com/media/iF0sIlvGhJ5G5WCWIx/giphy.gif?cid=ecf05e47v3jsp4s8gj3u8li6kmfx2d6f98si1fn3o8hjg0d7&rid=giphy.gif&ct=g"
+      )
+      expect(meta.name).to.equal("twitterX1234321")
+      expect(meta.attributes.type).to.equal("array")
+      expect(meta.attributes.value.length).to.equal(2)
+      expect(meta.attributes.value[0]).to.equal(
+        owner.address.toLocaleLowerCase()
+      )
+      expect(meta.attributes.value[1]).to.equal(
+        addr1.address.toLocaleLowerCase()
+      )
     })
 
     it("should paginate", async function () {
-      let meta = await ecoNft.tokenURICursor(1, 0, 1)
-      let metaArray = meta.split(",")
-      expect(metaArray[0]).to.equal(owner.address.toLocaleLowerCase())
-      expect(metaArray.length).to.equal(1)
+      let meta: Meta = JSON.parse(await ecoNft.tokenURICursor(1, 0, 1))
+      expect(meta.attributes.value[0]).to.equal(
+        owner.address.toLocaleLowerCase()
+      )
+      expect(meta.attributes.value.length).to.equal(1)
 
-      meta = await ecoNft.tokenURICursor(1, 1, 1)
-      metaArray = meta.split(",")
-      expect(metaArray[0]).to.equal(addr1.address.toLocaleLowerCase())
-      expect(metaArray.length).to.equal(1)
+      meta = JSON.parse(await ecoNft.tokenURICursor(1, 1, 1))
+      expect(meta.attributes.value[0]).to.equal(
+        addr1.address.toLocaleLowerCase()
+      )
+      expect(meta.attributes.value.length).to.equal(1)
 
-      meta = await ecoNft.tokenURICursor(1, 0, 10)
-      metaArray = meta.split(",")
-      expect(metaArray[0]).to.equal(owner.address.toLocaleLowerCase())
-      expect(metaArray[1]).to.equal(addr1.address.toLocaleLowerCase())
-      expect(metaArray.length).to.equal(2)
+      meta = JSON.parse(await ecoNft.tokenURICursor(1, 0, 10))
+      expect(meta.attributes.value[0]).to.equal(
+        owner.address.toLocaleLowerCase()
+      )
+      expect(meta.attributes.value[1]).to.equal(
+        addr1.address.toLocaleLowerCase()
+      )
+      expect(meta.attributes.value.length).to.equal(2)
     })
   })
 
