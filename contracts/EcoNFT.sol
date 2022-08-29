@@ -26,7 +26,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         "https://media4.giphy.com/media/iF0sIlvGhJ5G5WCWIx/giphy.gif?cid=ecf05e47v3jsp4s8gj3u8li6kmfx2d6f98si1fn3o8hjg0d7&rid=giphy.gif&ct=g";
 
     /**
-     * The default limit for the tokenURI meta that reads from the claim verifiers
+     * The default pagination limit for the tokenURI meta that reads from the claim verifiers array
      */
     uint256 public constant META_LIMIT = 50;
 
@@ -99,6 +99,8 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * @param recipient the address of the associated claim
      * @param verifier the address of the verifier for the claim on the recipient address
      * @param claim the claim that should be verified
+     *
+     * @return true if the claim is verified, false otherwise
      */
     function isClaimVerified(
         address recipient,
@@ -109,13 +111,12 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     }
 
     /**
-     * Mints an EcoNFT if the discord and twitter IDs have not been claimed yet, and only when the owener of this EcoNFT contract
-     * has signed off on the minting
+     * Registers a claim by an approved verifier to the recipient of that claim.
      *
      * @param claim the claim that is beign verified
-     * @param feeAmount the cost to mint the nft that is sent back to the minterAddress
-     * @param recipient the address of the recipient of the newly minted nft
-     * @param verifier the address of the minter for the nft, that has verified the socialID
+     * @param feeAmount the cost to mint the nft that is sent back to the verifier address
+     * @param recipient the address of the recipient of the registered claim
+     * @param verifier the address that is verifying the claim
      * @param approveSig signature that proves that the recipient has approved the verifier to register a claim
      * @param verifySig signature that we are validating comes from the verifier address
      */
@@ -160,7 +161,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     }
 
     /**
-     * Mints the nft for the claim
+     * Mints the nft toek for the claim
      *
      * @param recipient the address of the recipient for the nft
      * @param claim the claim that is being associated to the nft
@@ -185,12 +186,13 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     }
 
     /**
-     * Returns the verifier addresses of a claim for a recipient in a comma separated string.
-     * Limits to META_LIMIT(50). See tokenURICursor if you need to paginate past that number
+     * Constructs and returns the ERC-721 schema metadata as a json object. 
+     * Calls a pagination for the verifier array that limits to 50. 
+     * See tokenURICursor if you need to paginate the metadata past that number
      *
      * @param tokenID the id of the nft
      *
-     * @return
+     * @return the metadata as a json object 
      */
     function tokenURI(uint256 tokenID)
         public
@@ -352,7 +354,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * Hashes the input parameters for the registration signature verification
      *
      * @param claim the claim being attested to
-     * @param feeAmount the cost to mint the nft that is sent back to the minterAddress
+     * @param feeAmount the cost to register the claim the recipient is willing to pay
      * @param recipient the address of the user that is having a claim registered
      */
     function getRegistrationHash(
