@@ -167,8 +167,6 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         _safeMint(recipient, tokenID);
 
         emit Mint(recipient, claim, tokenID);
-
-        return tokenID;
     }
 
     /**
