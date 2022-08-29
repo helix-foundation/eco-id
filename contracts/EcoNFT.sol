@@ -76,11 +76,6 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     mapping(uint256 => TokenClaim) public _tokenClaimIDs;
 
     /**
-     * Mapping of the hash(claim, address) to the address
-     */
-    mapping(string => address) public _claimAddresses;
-
-    /**
      * The token contract that is used for fee payments to the minter address
      */
     ERC20 public immutable _token;
@@ -113,7 +108,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * @param recipient the address of the recipient of the newly minted nft
      * @param verifier the address of the minter for the nft, that has verified the socialID
      * @param approveSig signature that proves that the recipient has approved the verifier to register a claim
-     * @param verifySig signature that we are validating comes from the minterAddress
+     * @param verifySig signature that we are validating comes from the verifier address
      */
     function register(
         string calldata claim,
@@ -178,8 +173,6 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         _safeMint(recipient, tokenID);
 
         emit Mint(recipient, claim, tokenID);
-
-        return tokenID;
     }
 
     /**
