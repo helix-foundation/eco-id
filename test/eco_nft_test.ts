@@ -160,7 +160,7 @@ describe("EcoNFT tests", async function () {
         .withArgs(claim, feeAmount, addr0.address, owner.address)
     })
 
-    it("should fail on duplicate verifier on a claim", async function () {
+    it("should fail when the same verifier attempts to verify the same claim twice", async function () {
       const [approvSig, verifySig] = await signRegistrationMessage(
         claim,
         feeAmount,
@@ -188,6 +188,48 @@ describe("EcoNFT tests", async function () {
           verifySig
         )
       ).to.be.revertedWith("duplicate varifier")
+    })
+
+    it("should allow multiple verifiers to verify the same claim", async function () {
+      const [, , addr1] = await ethers.getSigners()
+      const [approvSig1, verifySig1] = await signRegistrationMessage(
+        claim,
+        feeAmount,
+        addr0,
+        owner
+      )
+      const [approvSig2, verifySig2] = await signRegistrationMessage(
+        claim,
+        feeAmount,
+        addr0,
+        addr1
+      )
+      await payFee(addr0, feeAmount * 2)
+      await expect(
+        ecoNft.register(
+          claim,
+          feeAmount,
+          addr0.address,
+          owner.address,
+          approvSig1,
+          verifySig1
+        )
+      )
+        .to.emit(ecoNft, "RegisterClaim")
+        .withArgs(claim, feeAmount, addr0.address, owner.address)
+
+      await expect(
+        ecoNft.register(
+          claim,
+          feeAmount,
+          addr0.address,
+          addr1.address,
+          approvSig2,
+          verifySig2
+        )
+      )
+        .to.emit(ecoNft, "RegisterClaim")
+        .withArgs(claim, feeAmount, addr0.address, addr1.address)
     })
   })
   describe("On NFT minting", async function () {
