@@ -186,13 +186,13 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     }
 
     /**
-     * Constructs and returns the ERC-721 schema metadata as a json object. 
-     * Calls a pagination for the verifier array that limits to 50. 
+     * Constructs and returns the ERC-721 schema metadata as a json object.
+     * Calls a pagination for the verifier array that limits to 50.
      * See tokenURICursor if you need to paginate the metadata past that number
      *
      * @param tokenID the id of the nft
      *
-     * @return the metadata as a json object 
+     * @return the metadata as a json object
      */
     function tokenURI(uint256 tokenID)
         public
