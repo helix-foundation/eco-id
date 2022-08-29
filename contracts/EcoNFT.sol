@@ -76,11 +76,6 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     mapping(uint256 => TokenClaim) public _tokenClaimIDs;
 
     /**
-     * Mapping of the hash(claim, address) to the address
-     */
-    mapping(string => address) public _claimAddresses;
-
-    /**
      * The token contract that is used for fee payments to the minter address
      */
     ERC20 public immutable _token;
