@@ -161,7 +161,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     }
 
     /**
-     * Mints the nft toek for the claim
+     * Mints the nft token for the claim
      *
      * @param recipient the address of the recipient for the nft
      * @param claim the claim that is being associated to the nft
