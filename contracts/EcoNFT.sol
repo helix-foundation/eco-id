@@ -107,19 +107,30 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * @param feeAmount the cost to mint the nft that is sent back to the minterAddress
      * @param recipient the address of the recipient of the newly minted nft
      * @param verifier the address of the minter for the nft, that has verified the socialID
-     * @param signature signature that we are validating comes from the minterAddress
+     * @param approveSig signature that proves that the recipient has approved the verifier to register a claim
+     * @param verifySig signature that we are validating comes from the verifier address
      */
-    // multi source array as meta
     function register(
         string calldata claim,
         uint256 feeAmount,
         address recipient,
         address verifier,
-        bytes calldata signature
+        bytes calldata approveSig,
+        bytes calldata verifySig
     ) external {
         require(bytes(claim).length != 0, "invalid empty claim");
         require(
-            _verifyMint(claim, feeAmount, recipient, verifier, signature),
+            _verifyApprove(claim, recipient, verifier, approveSig),
+            "verifier not approved"
+        );
+        require(
+            _verifyRegistration(
+                claim,
+                feeAmount,
+                recipient,
+                verifier,
+                verifySig
+            ),
             "signature did not match"
         );
 
@@ -203,25 +214,45 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     }
 
     /**
-     * Verifies the signature supplied belongs to the owner address.
+     * Verifies the signature supplied grants the verifier approval by the recipient to modify their claim
      *
-     * @param socialID the social ids of the user
-     * @param feeAmount the cost to mint the nft that is sent back to the minterAddress
-     * @param recipientAddress the address of the user that gets the nft
-     * @param minterAddress  the address of the minter for the nft, that has verified the socialID
-     * @param signature signature that we are validating comes from the minterAddress
+     * @param claim the claim being verified
+     * @param recipient the address of the recipient of a registration
+     * @param verifier  the address of the verifying agent
+     * @param approveSig signature that we are validating grants the verifier permission to register the claim to the recipient
      *
      * @return true if the signature is valid, false otherwise
      */
-    function _verifyMint(
-        string calldata socialID,
+    function _verifyApprove(
+        string calldata claim,
+        address recipient,
+        address verifier,
+        bytes calldata approveSig
+    ) internal pure returns (bool) {
+        bytes32 hash = getApproveHash(claim, recipient, verifier);
+        return hash.recover(approveSig) == recipient;
+    }
+
+    /**
+     * Verifies the signature supplied belongs to the verifier for a certain claim.
+     *
+     * @param claim the claim being verified
+     * @param feeAmount the cost paid to the verifier by the recipient
+     * @param recipient the address of the recipient of a registration
+     * @param verifier  the address of the verifying agent
+     * @param signature signature that we are validating comes from the verifier
+     *
+     * @return true if the signature is valid, false otherwise
+     */
+    function _verifyRegistration(
+        string calldata claim,
         uint256 feeAmount,
-        address recipientAddress,
-        address minterAddress,
+        address recipient,
+        address verifier,
         bytes calldata signature
     ) internal pure returns (bool) {
-        bytes32 hash = getNftHash(socialID, feeAmount, recipientAddress);
-        return hash.recover(signature) == minterAddress;
+        bytes32 hash = getRegistrationHash(claim, feeAmount, recipient);
+        return hash.recover(signature) == verifier;
     }
 
     /**
@@ -239,20 +270,36 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     }
 
     /**
-     * Hashes the input parameters and hashes using keccak256,
-     * attaches eth_sign_message for a validator verification
+     * Hashes the input parameters for the registration signature verification
      *
      * @param claim the claim being attested to
      * @param feeAmount the cost to mint the nft that is sent back to the minterAddress
-     * @param recipient the address of the user that gets the nft
+     * @param recipient the address of the user that is having a claim registered
      */
-    function getNftHash(
+    function getRegistrationHash(
         string calldata claim,
         uint256 feeAmount,
         address recipient
     ) private pure returns (bytes32) {
         return
             keccak256(abi.encodePacked(claim, feeAmount, recipient))
+                .toEthSignedMessageHash();
+    }
+
+    /**
+     * Hashes the input parameters for the approval signature verification
+     *
+     * @param claim the claim being attested to
+     * @param recipient the address of the user that is having a claim registered
+     * @param verifier the address of the verifier of the claim
+     */
+    function getApproveHash(
+        string calldata claim,
+        address recipient,
+        address verifier
+    ) private pure returns (bytes32) {
+        return
+            keccak256(abi.encodePacked(claim, recipient, verifier))
                 .toEthSignedMessageHash();
     }
 }
