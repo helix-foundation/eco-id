@@ -88,7 +88,7 @@ describe("EcoNFT tests", async function () {
           verifySig,
           verifySig
         )
-      ).to.be.revertedWith("verifier not approved")
+      ).to.be.revertedWith("invalid recipient signature")
     })
 
     it("should fail an invalid verify signature", async function () {
@@ -115,7 +115,34 @@ describe("EcoNFT tests", async function () {
           approvSig,
           verifySig
         )
-      ).to.be.revertedWith("signature did not match")
+      ).to.be.revertedWith("invalid verifier signature")
+    })
+
+    it("should fail on a fee amount difference", async function () {
+      const [approvSig] = await signRegistrationMessage(
+        claim,
+        feeAmount,
+        addr0,
+        owner
+      )
+
+      const [, verifySig] = await signRegistrationMessage(
+        claim,
+        feeAmount + 10,
+        addr0,
+        owner
+      )
+
+      await expect(
+        ecoNft.register(
+          claim,
+          feeAmount,
+          addr0.address,
+          owner.address,
+          approvSig,
+          verifySig
+        )
+      ).to.be.revertedWith("invalid verifier signature")
     })
 
     it("should fail on payment transfer failure", async function () {
