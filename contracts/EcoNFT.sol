@@ -130,8 +130,8 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     ) external {
         require(bytes(claim).length != 0, "invalid empty claim");
         require(
-            _verifyApprove(claim, recipient, verifier, approveSig),
-            "verifier not approved"
+            _verifyApprove(claim, feeAmount, recipient, verifier, approveSig),
+            "invalid recipient signature"
         );
         require(
             _verifyRegistration(
@@ -141,7 +141,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
                 verifier,
                 verifySig
             ),
-            "signature did not match"
+            "invalid verifier signature"
         );
 
         VerifiedClaim storage vclaim = _verifiedClaims[recipient][claim];
@@ -298,6 +298,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * Verifies the signature supplied grants the verifier approval by the recipient to modify their claim
      *
      * @param claim the claim being verified
+     * @param feeAmount the cost paid to the verifier by the recipient
      * @param recipient the address of the recipient of a registration
      * @param verifier  the address of the verifying agent
      * @param approveSig signature that we are validating grants the verifier permission to register the claim to the recipient
@@ -306,11 +307,12 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      */
     function _verifyApprove(
         string calldata claim,
+        uint256 feeAmount,
         address recipient,
         address verifier,
         bytes calldata approveSig
     ) internal pure returns (bool) {
-        bytes32 hash = getApproveHash(claim, recipient, verifier);
+        bytes32 hash = getApproveHash(claim, feeAmount, recipient, verifier);
         return hash.recover(approveSig) == recipient;
     }
 
@@ -371,16 +373,18 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * Hashes the input parameters for the approval signature verification
      *
      * @param claim the claim being attested to
+     * @param feeAmount the cost paid to the verifier by the recipient
      * @param recipient the address of the user that is having a claim registered
      * @param verifier the address of the verifier of the claim
      */
     function getApproveHash(
         string calldata claim,
+        uint256 feeAmount,
         address recipient,
         address verifier
     ) private pure returns (bytes32) {
         return
-            keccak256(abi.encodePacked(claim, recipient, verifier))
+            keccak256(abi.encodePacked(claim, feeAmount, recipient, verifier))
                 .toEthSignedMessageHash();
     }
 }
