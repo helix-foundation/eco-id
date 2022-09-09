@@ -21,6 +21,7 @@ module.exports = {
     "prefer-destructuring": 0,
     "mocha/no-exclusive-tests": "error",
     "chai-friendly/no-unused-expressions": 2,
+    "@typescript-eslint/no-unused-vars": ["error"],
     "no-multiple-empty-lines": [
       "error",
       {
