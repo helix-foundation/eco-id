@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
+import "./Base64.sol";
 /**
  * This is the EcoNFT for verifying an arbitraty claim.
  */
@@ -230,8 +231,13 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         meta = string.concat(
             meta,
             _metaVerifierArray(vclaim.verifiers, cursor, limit),
-            "]}}"
+            '"}]}'
         );
+
+        string memory base = "data:application/json;base64,";
+        string memory base64EncodedMeta = Base64.encode(bytes(string(abi.encodePacked(meta))));
+
+        meta = string(abi.encodePacked(base, base64EncodedMeta));
     }
 
     /**
@@ -257,7 +263,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         );
         meta = string.concat(meta, '"image":', '"', NFT_IMAGE_URL, '",');
         meta = string.concat(meta, '"name":', '"', claim, '",');
-        meta = string.concat(meta, '"attributes":{"type": "array", "value": [');
+        meta = string.concat(meta, '"attributes":[{"trait_type": "Verifiers", "value": "');
     }
 
     /**
@@ -287,9 +293,9 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
             );
 
             if (i < lastPoint) {
-                meta = string.concat(meta, '"', addr, '",');
+                meta = string.concat(meta, addr, ', ');
             } else {
-                meta = string.concat(meta, '"', addr, '"');
+                meta = string.concat(meta, addr);
             }
         }
     }
