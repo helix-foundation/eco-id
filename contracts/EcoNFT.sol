@@ -205,6 +205,15 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         return tokenURICursor(tokenID, 0, META_LIMIT);
     }
 
+    function _substring(string memory str, uint startIndex, uint endIndex) private pure returns (string  memory) {
+        bytes memory strBytes = bytes(str);
+        bytes memory result = new bytes(endIndex-startIndex);
+        for(uint i = startIndex; i < endIndex; i++) {
+            result[i-startIndex] = strBytes[i];
+        }
+        return string(result);
+    }
+
     /**
      * Constructs and returns the metadata ERC-721 schema json for the NFT.
      * Uses regular cursor pagination in case the verifiers array for the claim is large.
@@ -227,7 +236,9 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
             tokenClaim.claim
         ];
 
-        meta = _metaPrefix(vclaim.claim);
+        string memory metadataName = string.concat("Eco Identity [data:", _substring(vclaim.claim, 0, 11), "..., verifier:", _substring(_metaVerifierArray(vclaim.verifiers, cursor, limit), 0, 6), "...]");
+
+        meta = _metaPrefix(vclaim.claim, metadataName);
         meta = string.concat(
             meta,
             _metaVerifierArray(vclaim.verifiers, cursor, limit),
@@ -247,7 +258,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      *
      * @return meta the partially constructed json
      */
-    function _metaPrefix(string storage claim)
+    function _metaPrefix(string storage claim, string memory name)
         internal
         pure
         returns (string memory meta)
@@ -262,8 +273,9 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
             '",'
         );
         meta = string.concat(meta, '"image":', '"', NFT_IMAGE_URL, '",');
-        meta = string.concat(meta, '"name":', '"', claim, '",');
-        meta = string.concat(meta, '"attributes":[{"trait_type": "Verifiers", "value": "');
+        meta = string.concat(meta, '"name":"', name, '",');
+        meta = string.concat(meta, '"attributes":[{"trait_type":"Data","value":"', claim, '"},');
+        meta = string.concat(meta, '{"trait_type":"Verifiers","value":"');
     }
 
     /**
