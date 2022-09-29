@@ -75,7 +75,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     uint256 public _tokenIDIndex = 1;
 
     /**
-     * Mapping the user address with all social accounts they have
+     * Mapping the user address with all claims they have
      */
     mapping(address => mapping(string => VerifiedClaim)) public _verifiedClaims;
 
