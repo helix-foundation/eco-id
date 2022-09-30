@@ -236,7 +236,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
             tokenClaim.claim
         ];
 
-        string memory metadataName = string.concat("Eco Identity [data:", _substring(vclaim.claim, 0, 11), "..., verifier:", _substring(_metaVerifierArray(vclaim.verifiers, cursor, limit), 0, 6), "...]");
+        string memory metadataName = string.concat("Eco Identity [data:", _substring(vclaim.claim, 6, 17), "..., verifiers:", _substring(_metaVerifierArray(vclaim.verifiers, cursor, limit), 0, 6), "...]");
 
         meta = _metaPrefix(vclaim.claim, metadataName);
         meta = string.concat(
