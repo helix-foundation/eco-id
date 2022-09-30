@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "./Base64.sol";
+
 /**
  * This is the EcoNFT for verifying an arbitraty claim.
  */
@@ -205,11 +206,15 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         return tokenURICursor(tokenID, 0, META_LIMIT);
     }
 
-    function _substring(string memory str, uint startIndex, uint endIndex) private pure returns (string  memory) {
+    function _substring(
+        string memory str,
+        uint256 startIndex,
+        uint256 endIndex
+    ) private pure returns (string memory) {
         bytes memory strBytes = bytes(str);
-        bytes memory result = new bytes(endIndex-startIndex);
-        for(uint i = startIndex; i < endIndex; i++) {
-            result[i-startIndex] = strBytes[i];
+        bytes memory result = new bytes(endIndex - startIndex);
+        for (uint256 i = startIndex; i < endIndex; i++) {
+            result[i - startIndex] = strBytes[i];
         }
         return string(result);
     }
@@ -236,7 +241,17 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
             tokenClaim.claim
         ];
 
-        string memory metadataName = string.concat("Eco Identity [data:", _substring(vclaim.claim, 0, 11), "..., verifier:", _substring(_metaVerifierArray(vclaim.verifiers, cursor, limit), 0, 6), "...]");
+        string memory metadataName = string.concat(
+            "Eco Identity [data:",
+            _substring(vclaim.claim, 0, 11),
+            "..., verifier:",
+            _substring(
+                _metaVerifierArray(vclaim.verifiers, cursor, limit),
+                0,
+                6
+            ),
+            "...]"
+        );
 
         meta = _metaPrefix(vclaim.claim, metadataName);
         meta = string.concat(
@@ -244,9 +259,10 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
             _metaVerifierArray(vclaim.verifiers, cursor, limit),
             '"}]}'
         );
-
         string memory base = "data:application/json;base64,";
-        string memory base64EncodedMeta = Base64.encode(bytes(string(abi.encodePacked(meta))));
+        string memory base64EncodedMeta = Base64.encode(
+            bytes(string(abi.encodePacked(meta)))
+        );
 
         meta = string(abi.encodePacked(base, base64EncodedMeta));
     }
@@ -274,7 +290,12 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         );
         meta = string.concat(meta, '"image":', '"', NFT_IMAGE_URL, '",');
         meta = string.concat(meta, '"name":"', name, '",');
-        meta = string.concat(meta, '"attributes":[{"trait_type":"Data","value":"', claim, '"},');
+        meta = string.concat(
+            meta,
+            '"attributes":[{"trait_type":"Data","value":"',
+            claim,
+            '"},'
+        );
         meta = string.concat(meta, '{"trait_type":"Verifiers","value":"');
     }
 
@@ -305,7 +326,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
             );
 
             if (i < lastPoint) {
-                meta = string.concat(meta, addr, ', ');
+                meta = string.concat(meta, addr, ", ");
             } else {
                 meta = string.concat(meta, addr);
             }

@@ -10,11 +10,13 @@ import { signRegistrationMessage } from "./utils/sign"
  * Note, check encryption https://dev.to/rounakbanik/tutorial-digital-signatures-nft-allowlists-eeb
  */
 describe("EcoNFT tests", async function () {
-  const claim = "twitterX1234321"
+  const claim = "ecoID:twitter:21306324"
   let owner: SignerWithAddress, addr0: SignerWithAddress
   let erc20: ERC20Test
   let ecoNft: EcoNFT
   const feeAmount = 1000
+
+  type NftAttribute = { trait_type: string; value: string }
 
   beforeEach(async function () {
     ;[owner, addr0] = await ethers.getSigners()
@@ -383,47 +385,67 @@ describe("EcoNFT tests", async function () {
     })
 
     it("should dispay the verifier of a claim", async function () {
-      const meta: Meta = JSON.parse(await ecoNft.tokenURI(1))
+      const [meta, dataAttr, verifierAttr, verifierAttrArray] = await getMeta(
+        await ecoNft.tokenURI(1)
+      )
 
       expect(meta.description).to.equal("EcoNFT")
       expect(meta.external_url).to.equal("https://eco.com/")
       expect(meta.image).to.equal(
         "https://media4.giphy.com/media/iF0sIlvGhJ5G5WCWIx/giphy.gif?cid=ecf05e47v3jsp4s8gj3u8li6kmfx2d6f98si1fn3o8hjg0d7&rid=giphy.gif&ct=g"
       )
-      expect(meta.name).to.equal("twitterX1234321")
-      expect(meta.attributes.type).to.equal("array")
-      expect(meta.attributes.value.length).to.equal(2)
-      expect(meta.attributes.value[0]).to.equal(
-        owner.address.toLocaleLowerCase()
+      expect(meta.name).to.equal(
+        "Eco Identity [data:ecoID:twitt..., verifier:0xf39f...]"
       )
-      expect(meta.attributes.value[1]).to.equal(
-        addr1.address.toLocaleLowerCase()
-      )
+      expect(dataAttr.trait_type).to.equal("Data")
+      expect(dataAttr.value).to.equal(claim)
+      expect(verifierAttr.trait_type).to.equal("Verifiers")
+      expect(verifierAttrArray.length).to.equal(2)
+      expect(verifierAttrArray[0]).to.equal(owner.address.toLocaleLowerCase())
+      expect(verifierAttrArray[1]).to.equal(addr1.address.toLocaleLowerCase())
     })
 
     it("should paginate", async function () {
-      let meta: Meta = JSON.parse(await ecoNft.tokenURICursor(1, 0, 1))
-      expect(meta.attributes.value[0]).to.equal(
-        owner.address.toLocaleLowerCase()
+      const [, , , verifierAttrArray] = await getMeta(
+        await ecoNft.tokenURICursor(1, 0, 1)
       )
-      expect(meta.attributes.value.length).to.equal(1)
+      expect(verifierAttrArray[0]).to.equal(owner.address.toLocaleLowerCase())
+      expect(verifierAttrArray.length).to.equal(1)
 
-      meta = JSON.parse(await ecoNft.tokenURICursor(1, 1, 1))
-      expect(meta.attributes.value[0]).to.equal(
-        addr1.address.toLocaleLowerCase()
+      const [, , , verifierAttrArray1] = await getMeta(
+        await ecoNft.tokenURICursor(1, 1, 1)
       )
-      expect(meta.attributes.value.length).to.equal(1)
+      expect(verifierAttrArray1[0]).to.equal(addr1.address.toLocaleLowerCase())
+      expect(verifierAttrArray1.length).to.equal(1)
 
-      meta = JSON.parse(await ecoNft.tokenURICursor(1, 0, 10))
-      expect(meta.attributes.value[0]).to.equal(
-        owner.address.toLocaleLowerCase()
+      const [, , , verifierAttrArray2] = await getMeta(
+        await ecoNft.tokenURICursor(1, 0, 10)
       )
-      expect(meta.attributes.value[1]).to.equal(
-        addr1.address.toLocaleLowerCase()
-      )
-      expect(meta.attributes.value.length).to.equal(2)
+      expect(verifierAttrArray2[0]).to.equal(owner.address.toLocaleLowerCase())
+      expect(verifierAttrArray2[1]).to.equal(addr1.address.toLocaleLowerCase())
+      expect(verifierAttrArray2.length).to.equal(2)
     })
   })
+
+  /**
+   * Decodes the metadata and returns it as objects
+   *
+   * @param metaEncoded the metadata to decode
+   */
+  async function getMeta(
+    metaEncoded: string
+  ): Promise<[Meta, NftAttribute, NftAttribute, string[]]> {
+    const meta: Meta = JSON.parse(atob(metaEncoded.split(",")[1]))
+    // @ts-ignore
+    const dataAttr: NftAttribute = meta.attributes[0]
+    // @ts-ignore
+    const verifierAttr: NftAttribute = meta.attributes[1]
+    const verifierAttrArray = verifierAttr.value
+      .split(",")
+      .map((id) => id.replace(" ", ""))
+
+    return [meta, dataAttr, verifierAttr, verifierAttrArray]
+  }
 
   /**
    * Transfers tokens to the user and then approves the nft contract to
