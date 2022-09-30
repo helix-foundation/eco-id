@@ -416,14 +416,20 @@ describe("EcoNFT tests", async function () {
       const [, , verifierAttrs1] = await getMeta(
         await ecoNft.tokenURICursor(1, 1, 1)
       )
-      expect(verifierAttrs1[0].value).to.equal(addr1.address.toLocaleLowerCase())
+      expect(verifierAttrs1[0].value).to.equal(
+        addr1.address.toLocaleLowerCase()
+      )
       expect(verifierAttrs1.length).to.equal(1)
 
       const [, , verifierAttrs2] = await getMeta(
         await ecoNft.tokenURICursor(1, 0, 10)
       )
-      expect(verifierAttrs2[0].value).to.equal(owner.address.toLocaleLowerCase())
-      expect(verifierAttrs2[1].value).to.equal(addr1.address.toLocaleLowerCase())
+      expect(verifierAttrs2[0].value).to.equal(
+        owner.address.toLocaleLowerCase()
+      )
+      expect(verifierAttrs2[1].value).to.equal(
+        addr1.address.toLocaleLowerCase()
+      )
       expect(verifierAttrs2.length).to.equal(2)
     })
   })
