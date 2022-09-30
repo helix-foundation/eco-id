@@ -385,7 +385,7 @@ describe("EcoNFT tests", async function () {
     })
 
     it("should dispay the verifier of a claim", async function () {
-      const [meta, dataAttr, verifierAttr, verifierAttrArray] = await getMeta(
+      const [meta, dataAttr, verifierAttrs] = await getMeta(
         await ecoNft.tokenURI(1)
       )
 
@@ -395,35 +395,42 @@ describe("EcoNFT tests", async function () {
         "https://media4.giphy.com/media/iF0sIlvGhJ5G5WCWIx/giphy.gif?cid=ecf05e47v3jsp4s8gj3u8li6kmfx2d6f98si1fn3o8hjg0d7&rid=giphy.gif&ct=g"
       )
       expect(meta.name).to.equal(
-        "Eco Identity [data:ecoID:twitt..., verifier:0xf39f...]"
+        "Eco Identity [data:twitter:213..., verifiers:0xf39f...]"
       )
       expect(dataAttr.trait_type).to.equal("Data")
       expect(dataAttr.value).to.equal(claim)
-      expect(verifierAttr.trait_type).to.equal("Verifiers")
-      expect(verifierAttrArray.length).to.equal(2)
-      expect(verifierAttrArray[0]).to.equal(owner.address.toLocaleLowerCase())
-      expect(verifierAttrArray[1]).to.equal(addr1.address.toLocaleLowerCase())
+      expect(verifierAttrs.length).to.equal(2)
+      expect(verifierAttrs[0].trait_type).to.equal("Verifier")
+      expect(verifierAttrs[0].value).to.equal(owner.address.toLocaleLowerCase())
+      expect(verifierAttrs[1].trait_type).to.equal("Verifier")
+      expect(verifierAttrs[1].value).to.equal(addr1.address.toLocaleLowerCase())
     })
 
     it("should paginate", async function () {
-      const [, , , verifierAttrArray] = await getMeta(
+      const [, , verifierAttrs] = await getMeta(
         await ecoNft.tokenURICursor(1, 0, 1)
       )
-      expect(verifierAttrArray[0]).to.equal(owner.address.toLocaleLowerCase())
-      expect(verifierAttrArray.length).to.equal(1)
+      expect(verifierAttrs[0].value).to.equal(owner.address.toLocaleLowerCase())
+      expect(verifierAttrs.length).to.equal(1)
 
-      const [, , , verifierAttrArray1] = await getMeta(
+      const [, , verifierAttrs1] = await getMeta(
         await ecoNft.tokenURICursor(1, 1, 1)
       )
-      expect(verifierAttrArray1[0]).to.equal(addr1.address.toLocaleLowerCase())
-      expect(verifierAttrArray1.length).to.equal(1)
+      expect(verifierAttrs1[0].value).to.equal(
+        addr1.address.toLocaleLowerCase()
+      )
+      expect(verifierAttrs1.length).to.equal(1)
 
-      const [, , , verifierAttrArray2] = await getMeta(
+      const [, , verifierAttrs2] = await getMeta(
         await ecoNft.tokenURICursor(1, 0, 10)
       )
-      expect(verifierAttrArray2[0]).to.equal(owner.address.toLocaleLowerCase())
-      expect(verifierAttrArray2[1]).to.equal(addr1.address.toLocaleLowerCase())
-      expect(verifierAttrArray2.length).to.equal(2)
+      expect(verifierAttrs2[0].value).to.equal(
+        owner.address.toLocaleLowerCase()
+      )
+      expect(verifierAttrs2[1].value).to.equal(
+        addr1.address.toLocaleLowerCase()
+      )
+      expect(verifierAttrs2.length).to.equal(2)
     })
   })
 
@@ -434,17 +441,14 @@ describe("EcoNFT tests", async function () {
    */
   async function getMeta(
     metaEncoded: string
-  ): Promise<[Meta, NftAttribute, NftAttribute, string[]]> {
+  ): Promise<[Meta, NftAttribute, NftAttribute[]]> {
     const meta: Meta = JSON.parse(atob(metaEncoded.split(",")[1]))
     // @ts-ignore
     const dataAttr: NftAttribute = meta.attributes[0]
     // @ts-ignore
-    const verifierAttr: NftAttribute = meta.attributes[1]
-    const verifierAttrArray = verifierAttr.value
-      .split(",")
-      .map((id) => id.replace(" ", ""))
+    const verifierAttrs: NftAttribute[] = meta.attributes.slice(1)
 
-    return [meta, dataAttr, verifierAttr, verifierAttrArray]
+    return [meta, dataAttr, verifierAttrs]
   }
 
   /**
