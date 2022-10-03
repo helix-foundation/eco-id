@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "./Base64.sol";
+
 /**
  * This is the EcoNFT for verifying an arbitraty claim.
  */
@@ -24,12 +25,17 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * The static image url for all the nft's, todo update to real link
      */
     string public constant NFT_IMAGE_URL =
-        "https://media4.giphy.com/media/iF0sIlvGhJ5G5WCWIx/giphy.gif?cid=ecf05e47v3jsp4s8gj3u8li6kmfx2d6f98si1fn3o8hjg0d7&rid=giphy.gif&ct=g";
+        "https://ipfs.io/ipfs/QmZxvWzRT4Kq3FGEjvMeBaad7qvrSc79MqPggk5At5qxP6";
 
     /**
      * The default pagination limit for the tokenURI meta that reads from the claim verifiers array
      */
     uint256 public constant META_LIMIT = 50;
+
+    /**
+     * The length of a substring for the name field of an nft
+     */
+    uint256 public constant SUB_NAME_LENGTH = 6;
 
     /**
      * Event for when a claim is verified for a recipient
@@ -240,14 +246,18 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
             tokenClaim.claim
         ];
 
+        string memory claim = vclaim.claim;
+        string memory nameFrag = getStringSize(claim) > SUB_NAME_LENGTH
+            ? string.concat(_substring(claim, 0, SUB_NAME_LENGTH + 1), "...")
+            : claim;
         string memory metadataName = string.concat(
-            "Eco Identity [data:",
-            _substring(vclaim.claim, 6, 17),
-            "..., verifiers:",
+            "Eco Fragment [data:",
+            nameFrag,
+            ", verifiers:",
             _substring(
                 Strings.toHexString(uint256(uint160(vclaim.verifiers[0])), 20),
                 0,
-                6
+                SUB_NAME_LENGTH + 1
             ),
             "...]"
         );
@@ -433,5 +443,14 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         return
             keccak256(abi.encodePacked(claim, feeAmount, recipient, verifier))
                 .toEthSignedMessageHash();
+    }
+
+    /**
+     * Returns the size of a string in bytes
+     *
+     * @param str string to check
+     */
+    function getStringSize(string memory str) internal pure returns (uint256) {
+        return bytes(str).length;
     }
 }
