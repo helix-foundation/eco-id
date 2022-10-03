@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "./Base64.sol";
-
 /**
  * This is the EcoNFT for verifying an arbitraty claim.
  */
@@ -19,7 +18,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     /**
      * The static web url for the nft
      */
-    string public constant NFT_EXTERNAL_URL = "https://eco.com/";
+    string public constant NFT_EXTERNAL_URL = "https://eco.org/";
 
     /**
      * The static image url for all the nft's, todo update to real link

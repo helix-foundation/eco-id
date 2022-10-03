@@ -390,7 +390,7 @@ describe("EcoNFT tests", async function () {
       )
 
       expect(meta.description).to.equal("EcoNFT")
-      expect(meta.external_url).to.equal("https://eco.com/")
+      expect(meta.external_url).to.equal("https://eco.org/")
       expect(meta.image).to.equal(
         "https://media4.giphy.com/media/iF0sIlvGhJ5G5WCWIx/giphy.gif?cid=ecf05e47v3jsp4s8gj3u8li6kmfx2d6f98si1fn3o8hjg0d7&rid=giphy.gif&ct=g"
       )
