@@ -1,7 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
 import { ethers } from "hardhat"
-import { EcoNFT, ERC20Test } from "../typechain"
+import { EcoNFT, EcoTest } from "../typechain"
 import { deployEcoNFT, Meta } from "./utils/fixtures"
 import { signRegistrationMessage } from "./utils/sign"
 
@@ -12,7 +12,7 @@ import { signRegistrationMessage } from "./utils/sign"
 describe("EcoNFT tests", async function () {
   const claim = "discord:21306324"
   let owner: SignerWithAddress, addr0: SignerWithAddress
-  let erc20: ERC20Test
+  let eco: EcoTest
   let ecoNft: EcoNFT
   const feeAmount = 1000
 
@@ -20,7 +20,7 @@ describe("EcoNFT tests", async function () {
 
   beforeEach(async function () {
     ;[owner, addr0] = await ethers.getSigners()
-    ;[erc20, ecoNft] = await deployEcoNFT()
+    ;[eco, ecoNft] = await deployEcoNFT()
   })
   describe("On nft transfer", async function () {
     it("should not allow the transfer of nft's", async function () {
@@ -459,7 +459,7 @@ describe("EcoNFT tests", async function () {
    * @param fee the tokens to transfer
    */
   async function payFee(user: SignerWithAddress, fee: number) {
-    await erc20.transfer(user.address, fee)
-    await erc20.connect(user).approve(ecoNft.address, fee)
+    await eco.transfer(user.address, fee)
+    await eco.connect(user).approve(ecoNft.address, fee)
   }
 })
