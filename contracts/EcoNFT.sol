@@ -568,8 +568,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     }
 
     /**
-     * Removes a verifier from the claim verifiers array by shifting and
-     * then popping the last element
+     * Removes a verifier from the verifiers array, does not preserve order
      *
      * @param verifiers the verified claim array of its verifiers
      * @param verifier the verifier to remove from the array
@@ -577,20 +576,11 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     function removeVerifier(address[] storage verifiers, address verifier)
         internal
     {
-        bool found = false;
-        uint256 i = 0;
-        for (i; i < verifiers.length - 1; i++) {
+        for (uint256 i = 0; i < verifiers.length; i++) {
             if (verifiers[i] == verifier) {
-                found = true;
+                verifiers[i] = verifiers[verifiers.length - 1];
+                verifiers.pop();
             }
-            if (found) {
-                verifiers[i] = verifiers[i + 1];
-            }
-        }
-
-        //if found or verifier is last element
-        if (found || verifiers[i] == verifier) {
-            verifiers.pop();
         }
     }
 
