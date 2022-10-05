@@ -580,6 +580,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
             if (verifiers[i] == verifier) {
                 verifiers[i] = verifiers[verifiers.length - 1];
                 verifiers.pop();
+                return;
             }
         }
     }
