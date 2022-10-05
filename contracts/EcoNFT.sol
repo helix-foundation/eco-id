@@ -4,7 +4,6 @@ pragma solidity ^0.8.15;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-
 import "./Base64.sol";
 
 /**
@@ -43,6 +42,15 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     event RegisterClaim(
         string indexed claim,
         uint256 feeAmount,
+        address indexed recipient,
+        address indexed verifier
+    );
+
+    /**
+     * Event for when a claim is unregistered by the verifier
+     */
+    event UnregisterClaim(
+        string indexed claim,
         address indexed recipient,
         address indexed verifier
     );
@@ -129,7 +137,6 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * @param approveSig signature that proves that the recipient has approved the verifier to register a claim
      * @param verifySig signature that we are validating comes from the verifier address
      */
-
     function register(
         string calldata claim,
         uint256 feeAmount,
@@ -138,10 +145,9 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         address verifier,
         bytes calldata approveSig,
         bytes calldata verifySig
-    ) external {
-        require(bytes(claim).length != 0, "invalid empty claim");
+    ) external _validClaim(claim) {
         require(
-            _verifyApprove(
+            _verifyRegistrationApprove(
                 claim,
                 feeAmount,
                 revocable,
@@ -152,7 +158,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
             "invalid recipient signature"
         );
         require(
-            _verifyRegistration(
+            _verifyRegistrationVerify(
                 claim,
                 feeAmount,
                 revocable,
@@ -181,6 +187,35 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     }
 
     /**
+     * Revokes a claim that has been made by the verifier if it was revocable
+     *
+     * @param claim the claim that was verified
+     * @param recipient the address of the recipient of the registered claim
+     * @param verifier the address that had verified the claim
+     * @param verifySig signature that we are validating comes from the verifier address
+     */
+    function unregister(
+        string calldata claim,
+        address recipient,
+        address verifier,
+        bytes calldata verifySig
+    ) external _validClaim(claim) {
+        VerifiedClaim storage vclaim = _verifiedClaims[recipient][claim];
+        require(vclaim.verifierMap[verifier], "claim not verified");
+        require(vclaim.revocable, "claim unrevocable");
+
+        require(
+            _verifyUnregistration(claim, recipient, verifier, verifySig),
+            "invalid verifier signature"
+        );
+
+        vclaim.verifierMap[verifier] = false;
+        removeVerifier(vclaim.verifiers, verifier);
+
+        emit UnregisterClaim(claim, recipient, verifier);
+    }
+
+    /**
      * Mints the nft token for the claim
      *
      * @param recipient the address of the recipient for the nft
@@ -193,7 +228,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         returns (uint256 tokenID)
     {
         VerifiedClaim storage vclaim = _verifiedClaims[recipient][claim];
-        require(bytes(vclaim.claim).length != 0, "nft claim non-existant");
+        require(vclaim.verifiers.length > 0, "nft claim non-existant");
         require(vclaim.tokenID == 0, "token already minted for claim");
 
         tokenID = _tokenIDIndex++;
@@ -234,7 +269,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      *
      * @return meta the metadata as a json array
      */
-    function tokenURICursor(
+   function tokenURICursor(
         uint256 tokenID,
         uint256 cursor,
         uint256 limit
@@ -363,7 +398,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      *
      * @return true if the signature is valid, false otherwise
      */
-    function _verifyApprove(
+    function _verifyRegistrationApprove(
         string calldata claim,
         uint256 feeAmount,
         bool revocable,
@@ -393,7 +428,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      *
      * @return true if the signature is valid, false otherwise
      */
-    function _verifyRegistration(
+    function _verifyRegistrationVerify(
         string calldata claim,
         uint256 feeAmount,
         bool revocable,
@@ -407,6 +442,25 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
             revocable,
             recipient
         );
+        return hash.recover(signature) == verifier;
+    }
+
+    /**
+     * Verifies the signature supplied belongs to the verifier for the claim.
+     *
+     * @param claim the claim that was verified
+     * @param recipient  the address of the recipient
+     * @param verifier  the address of the verifying agent
+     * @param signature signature that we are validating comes from the verifier
+     * @return true if the signature is valid, false otherwise
+     */
+    function _verifyUnregistration(
+        string calldata claim,
+        address recipient,
+        address verifier,
+        bytes calldata signature
+    ) internal pure returns (bool) {
+        bytes32 hash = getUnregistrationHash(claim, recipient, verifier);
         return hash.recover(signature) == verifier;
     }
 
@@ -444,6 +498,23 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     }
 
     /**
+     * Hashes the input parameters for the unregistration signature verification
+     *
+     * @param claim the claim that was verified
+     * @param recipient the address of the user that owns that claim
+     * @param verifier  the address of the verifying agent
+     */
+    function getUnregistrationHash(
+        string calldata claim,
+        address recipient,
+        address verifier
+    ) private pure returns (bytes32) {
+        return
+            keccak256(abi.encodePacked(claim, recipient, verifier))
+                .toEthSignedMessageHash();
+    }
+
+    /**
      * Hashes the input parameters for the approval signature verification
      *
      * @param claim the claim being attested to
@@ -469,6 +540,43 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
                     verifier
                 )
             ).toEthSignedMessageHash();
+    }
+
+    /**
+     * Checks that the claim is not empty
+     *
+     * @param claim the claim to check
+     */
+    modifier _validClaim(string memory claim) {
+        require(bytes(claim).length != 0, "invalid empty claim");
+        _;
+    }
+
+    /**
+     * Removes a verifier from the claim verifiers array by shifting and
+     * then popping the last element
+     *
+     * @param verifiers the verified claim array of its verifiers
+     * @param verifier the verifier to remove from the array
+     */
+    function removeVerifier(address[] storage verifiers, address verifier)
+        internal
+    {
+        bool found = false;
+        uint256 i = 0;
+        for (i; i < verifiers.length - 1; i++) {
+            if (verifiers[i] == verifier) {
+                found = true;
+            }
+            if (found) {
+                verifiers[i] = verifiers[i + 1];
+            }
+        }
+
+        //if found or verifier is last element
+        if (found || verifiers[i] == verifier) {
+            verifiers.pop();
+        }
     }
 
     /**
