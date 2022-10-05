@@ -61,6 +61,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      */
     struct VerifiedClaim {
         string claim;
+        bool revocable;
         uint256 tokenID;
         address[] verifiers;
         mapping(address => bool) verifierMap;
@@ -122,14 +123,17 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      *
      * @param claim the claim that is beign verified
      * @param feeAmount the cost to mint the nft that is sent back to the verifier address
+     * @param revocable true if the verifier can revoke their verification of the claim in the future
      * @param recipient the address of the recipient of the registered claim
      * @param verifier the address that is verifying the claim
      * @param approveSig signature that proves that the recipient has approved the verifier to register a claim
      * @param verifySig signature that we are validating comes from the verifier address
      */
+
     function register(
         string calldata claim,
         uint256 feeAmount,
+        bool revocable,
         address recipient,
         address verifier,
         bytes calldata approveSig,
@@ -137,13 +141,21 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     ) external {
         require(bytes(claim).length != 0, "invalid empty claim");
         require(
-            _verifyApprove(claim, feeAmount, recipient, verifier, approveSig),
+            _verifyApprove(
+                claim,
+                feeAmount,
+                revocable,
+                recipient,
+                verifier,
+                approveSig
+            ),
             "invalid recipient signature"
         );
         require(
             _verifyRegistration(
                 claim,
                 feeAmount,
+                revocable,
                 recipient,
                 verifier,
                 verifySig
@@ -152,8 +164,9 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         );
 
         VerifiedClaim storage vclaim = _verifiedClaims[recipient][claim];
-        vclaim.claim = claim;
         require(!vclaim.verifierMap[verifier], "duplicate varifier");
+        vclaim.claim = claim;
+        vclaim.revocable = revocable;
         vclaim.verifiers.push(verifier);
         vclaim.verifierMap[verifier] = true;
 
@@ -209,19 +222,6 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         returns (string memory)
     {
         return tokenURICursor(tokenID, 0, META_LIMIT);
-    }
-
-    function _substring(
-        string memory str,
-        uint256 startIndex,
-        uint256 endIndex
-    ) private pure returns (string memory) {
-        bytes memory strBytes = bytes(str);
-        bytes memory result = new bytes(endIndex - startIndex);
-        for (uint256 i = startIndex; i < endIndex; i++) {
-            result[i - startIndex] = strBytes[i];
-        }
-        return string(result);
     }
 
     /**
@@ -356,6 +356,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      *
      * @param claim the claim being verified
      * @param feeAmount the cost paid to the verifier by the recipient
+     * @param revocable true if the verifier can revoke their verification of the claim in the future
      * @param recipient the address of the recipient of a registration
      * @param verifier  the address of the verifying agent
      * @param approveSig signature that we are validating grants the verifier permission to register the claim to the recipient
@@ -365,11 +366,18 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     function _verifyApprove(
         string calldata claim,
         uint256 feeAmount,
+        bool revocable,
         address recipient,
         address verifier,
         bytes calldata approveSig
     ) internal pure returns (bool) {
-        bytes32 hash = getApproveHash(claim, feeAmount, recipient, verifier);
+        bytes32 hash = getApproveHash(
+            claim,
+            feeAmount,
+            revocable,
+            recipient,
+            verifier
+        );
         return hash.recover(approveSig) == recipient;
     }
 
@@ -378,6 +386,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      *
      * @param claim the claim being verified
      * @param feeAmount the cost paid to the verifier by the recipient
+     * @param revocable true if the verifier can revoke their verification of the claim in the future
      * @param recipient the address of the recipient of a registration
      * @param verifier  the address of the verifying agent
      * @param signature signature that we are validating comes from the verifier
@@ -387,11 +396,17 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     function _verifyRegistration(
         string calldata claim,
         uint256 feeAmount,
+        bool revocable,
         address recipient,
         address verifier,
         bytes calldata signature
     ) internal pure returns (bool) {
-        bytes32 hash = getRegistrationHash(claim, feeAmount, recipient);
+        bytes32 hash = getRegistrationHash(
+            claim,
+            feeAmount,
+            revocable,
+            recipient
+        );
         return hash.recover(signature) == verifier;
     }
 
@@ -414,15 +429,17 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      *
      * @param claim the claim being attested to
      * @param feeAmount the cost to register the claim the recipient is willing to pay
+     * @param revocable true if the verifier can revoke their verification of the claim in the future
      * @param recipient the address of the user that is having a claim registered
      */
     function getRegistrationHash(
         string calldata claim,
         uint256 feeAmount,
+        bool revocable,
         address recipient
     ) private pure returns (bytes32) {
         return
-            keccak256(abi.encodePacked(claim, feeAmount, recipient))
+            keccak256(abi.encodePacked(claim, feeAmount, revocable, recipient))
                 .toEthSignedMessageHash();
     }
 
@@ -431,18 +448,43 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      *
      * @param claim the claim being attested to
      * @param feeAmount the cost paid to the verifier by the recipient
+     * @param revocable true if the verifier can revoke their verification of the claim in the future
      * @param recipient the address of the user that is having a claim registered
      * @param verifier the address of the verifier of the claim
      */
     function getApproveHash(
         string calldata claim,
         uint256 feeAmount,
+        bool revocable,
         address recipient,
         address verifier
     ) private pure returns (bytes32) {
         return
-            keccak256(abi.encodePacked(claim, feeAmount, recipient, verifier))
-                .toEthSignedMessageHash();
+            keccak256(
+                abi.encodePacked(
+                    claim,
+                    feeAmount,
+                    revocable,
+                    recipient,
+                    verifier
+                )
+            ).toEthSignedMessageHash();
+    }
+
+    /**
+     * Returns a substring of the input argument
+     */
+    function _substring(
+        string memory str,
+        uint256 startIndex,
+        uint256 endIndex
+    ) private pure returns (string memory) {
+        bytes memory strBytes = bytes(str);
+        bytes memory result = new bytes(endIndex - startIndex);
+        for (uint256 i = startIndex; i < endIndex; i++) {
+            result[i - startIndex] = strBytes[i];
+        }
+        return string(result);
     }
 
     /**

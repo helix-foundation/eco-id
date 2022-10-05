@@ -27,6 +27,7 @@ describe("EcoNFT tests", async function () {
       const [approvSig, verifySig] = await signRegistrationMessage(
         claim,
         feeAmount,
+        true,
         addr0,
         owner
       )
@@ -36,6 +37,7 @@ describe("EcoNFT tests", async function () {
       await ecoNft.register(
         claim,
         feeAmount,
+        true,
         addr0.address,
         owner.address,
         approvSig,
@@ -58,6 +60,7 @@ describe("EcoNFT tests", async function () {
       const [approvSig, verifySig] = await signRegistrationMessage(
         claim,
         feeAmount,
+        true,
         addr0,
         owner
       )
@@ -66,6 +69,7 @@ describe("EcoNFT tests", async function () {
         ecoNft.register(
           "",
           feeAmount,
+          true,
           addr0.address,
           owner.address,
           approvSig,
@@ -78,6 +82,7 @@ describe("EcoNFT tests", async function () {
       const [, verifySig] = await signRegistrationMessage(
         claim,
         feeAmount,
+        true,
         addr0,
         owner
       )
@@ -85,6 +90,7 @@ describe("EcoNFT tests", async function () {
         ecoNft.register(
           claim,
           feeAmount,
+          true,
           addr0.address,
           owner.address,
           verifySig,
@@ -97,6 +103,7 @@ describe("EcoNFT tests", async function () {
       const [approvSig] = await signRegistrationMessage(
         claim,
         feeAmount,
+        true,
         addr0,
         owner
       )
@@ -104,6 +111,7 @@ describe("EcoNFT tests", async function () {
       const [, verifySig] = await signRegistrationMessage(
         claim + "1",
         feeAmount,
+        true,
         addr0,
         owner
       )
@@ -112,6 +120,7 @@ describe("EcoNFT tests", async function () {
         ecoNft.register(
           claim,
           feeAmount,
+          true,
           addr0.address,
           owner.address,
           approvSig,
@@ -124,6 +133,7 @@ describe("EcoNFT tests", async function () {
       const [approvSig] = await signRegistrationMessage(
         claim,
         feeAmount,
+        true,
         addr0,
         owner
       )
@@ -131,6 +141,7 @@ describe("EcoNFT tests", async function () {
       const [, verifySig] = await signRegistrationMessage(
         claim,
         feeAmount + 10,
+        true,
         addr0,
         owner
       )
@@ -139,6 +150,7 @@ describe("EcoNFT tests", async function () {
         ecoNft.register(
           claim,
           feeAmount,
+          true,
           addr0.address,
           owner.address,
           approvSig,
@@ -151,6 +163,7 @@ describe("EcoNFT tests", async function () {
       const [approvSig, verifySig] = await signRegistrationMessage(
         claim,
         feeAmount,
+        true,
         addr0,
         owner
       )
@@ -158,6 +171,7 @@ describe("EcoNFT tests", async function () {
         ecoNft.register(
           claim,
           feeAmount,
+          true,
           addr0.address,
           owner.address,
           approvSig,
@@ -170,6 +184,7 @@ describe("EcoNFT tests", async function () {
       const [approvSig, verifySig] = await signRegistrationMessage(
         claim,
         feeAmount,
+        true,
         addr0,
         owner
       )
@@ -179,6 +194,7 @@ describe("EcoNFT tests", async function () {
         ecoNft.register(
           claim,
           feeAmount,
+          true,
           addr0.address,
           owner.address,
           approvSig,
@@ -193,6 +209,7 @@ describe("EcoNFT tests", async function () {
       const [approvSig, verifySig] = await signRegistrationMessage(
         claim,
         feeAmount,
+        true,
         addr0,
         owner
       )
@@ -201,6 +218,7 @@ describe("EcoNFT tests", async function () {
       await ecoNft.register(
         claim,
         feeAmount,
+        true,
         addr0.address,
         owner.address,
         approvSig,
@@ -211,6 +229,7 @@ describe("EcoNFT tests", async function () {
         ecoNft.register(
           claim,
           feeAmount,
+          true,
           addr0.address,
           owner.address,
           approvSig,
@@ -224,12 +243,14 @@ describe("EcoNFT tests", async function () {
       const [approvSig1, verifySig1] = await signRegistrationMessage(
         claim,
         feeAmount,
+        true,
         addr0,
         owner
       )
       const [approvSig2, verifySig2] = await signRegistrationMessage(
         claim,
         feeAmount,
+        true,
         addr0,
         addr1
       )
@@ -238,6 +259,7 @@ describe("EcoNFT tests", async function () {
         ecoNft.register(
           claim,
           feeAmount,
+          true,
           addr0.address,
           owner.address,
           approvSig1,
@@ -251,6 +273,7 @@ describe("EcoNFT tests", async function () {
         ecoNft.register(
           claim,
           feeAmount,
+          true,
           addr0.address,
           addr1.address,
           approvSig2,
@@ -266,6 +289,7 @@ describe("EcoNFT tests", async function () {
       const [approvSig, verifySig] = await signRegistrationMessage(
         claim,
         feeAmount,
+        true,
         addr0,
         owner
       )
@@ -274,6 +298,7 @@ describe("EcoNFT tests", async function () {
       await ecoNft.register(
         claim,
         feeAmount,
+        true,
         addr0.address,
         owner.address,
         approvSig,
@@ -318,6 +343,7 @@ describe("EcoNFT tests", async function () {
       const [approvSig, verifySig] = await signRegistrationMessage(
         claim2,
         feeAmount,
+        true,
         addr0,
         owner
       )
@@ -327,6 +353,7 @@ describe("EcoNFT tests", async function () {
         ecoNft.register(
           claim2,
           feeAmount,
+          true,
           addr0.address,
           owner.address,
           approvSig,
@@ -352,18 +379,21 @@ describe("EcoNFT tests", async function () {
       const [approvSig0, verifySig0] = await signRegistrationMessage(
         claim,
         feeAmount,
+        true,
         addr0,
         owner
       )
       const [approvSig1, verifySig1] = await signRegistrationMessage(
         claim,
         feeAmount,
+        true,
         addr0,
         addr1
       )
       await ecoNft.register(
         claim,
         feeAmount,
+        true,
         addr0.address,
         owner.address,
         approvSig0,
@@ -372,6 +402,7 @@ describe("EcoNFT tests", async function () {
       await ecoNft.register(
         claim,
         feeAmount,
+        true,
         addr0.address,
         addr1.address,
         approvSig1,
