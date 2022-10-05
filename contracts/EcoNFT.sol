@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -269,7 +269,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      *
      * @return meta the metadata as a json array
      */
-   function tokenURICursor(
+    function tokenURICursor(
         uint256 tokenID,
         uint256 cursor,
         uint256 limit
@@ -285,23 +285,33 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         string memory nameFrag = getStringSize(claim) > SUB_NAME_LENGTH
             ? string.concat(_substring(claim, 0, SUB_NAME_LENGTH + 1), "...")
             : claim;
+        bool hasVerifiers = vclaim.verifiers.length > 0;
+        string memory verifiersFrag = hasVerifiers
+            ? string.concat(
+                _substring(
+                    Strings.toHexString(
+                        uint256(uint160(vclaim.verifiers[0])),
+                        20
+                    ),
+                    0,
+                    SUB_NAME_LENGTH + 1
+                ),
+                "...]"
+            )
+            : "null]";
         string memory metadataName = string.concat(
             "Eco Fragment [data:",
             nameFrag,
             ", verifiers:",
-            _substring(
-                Strings.toHexString(uint256(uint160(vclaim.verifiers[0])), 20),
-                0,
-                SUB_NAME_LENGTH + 1
-            ),
-            "...]"
+            verifiersFrag
         );
 
-        meta = _metaPrefix(vclaim.claim, metadataName);
+        meta = _metaPrefix(vclaim.claim, metadataName, hasVerifiers);
+        string memory closing = hasVerifiers ? '"}]}' : "]}";
         meta = string.concat(
             meta,
             _metaVerifierArray(vclaim.verifiers, cursor, limit),
-            '"}]}'
+            closing
         );
 
         string memory base = "data:application/json;base64,";
@@ -315,15 +325,16 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     /**
      * Constructs the first portion of the nft metadata
      *
-     * @param claim the claim being verified
-     *
+     * @param claim the claim
+     * @param name the name of the nft
+     * @param hasVerifiers whether the nft has any verifiers
      * @return meta the partially constructed json
      */
-    function _metaPrefix(string storage claim, string memory name)
-        internal
-        pure
-        returns (string memory meta)
-    {
+    function _metaPrefix(
+        string storage claim,
+        string memory name,
+        bool hasVerifiers
+    ) internal pure returns (string memory meta) {
         meta = "{";
         meta = string.concat(meta, '"description":', '"EcoNFT",');
         meta = string.concat(
@@ -335,11 +346,12 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         );
         meta = string.concat(meta, '"image":', '"', NFT_IMAGE_URL, '",');
         meta = string.concat(meta, '"name":"', name, '",');
+        string memory closing = hasVerifiers ? '"},' : '"}';
         meta = string.concat(
             meta,
             '"attributes":[{"trait_type":"Data","value":"',
             claim,
-            '"},'
+            closing
         );
     }
 
@@ -357,6 +369,9 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         uint256 cursor,
         uint256 limit
     ) internal view returns (string memory meta) {
+        if (verifiers.length == 0) {
+            return meta;
+        }
         //get the ending position
         uint256 readEnd = cursor + limit;
         uint256 vl = verifiers.length;

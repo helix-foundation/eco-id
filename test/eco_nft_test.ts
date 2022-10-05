@@ -1,9 +1,12 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
 import { ethers } from "hardhat"
-import { EcoNFT, EcoTest } from "../typechain"
+import { EcoNFT, EcoTest } from "../typechain-types"
 import { deployEcoNFT, Meta } from "./utils/fixtures"
-import { signRegistrationMessage, signUnregistrationMessage } from "./utils/sign"
+import {
+  signRegistrationMessage,
+  signUnregistrationMessage,
+} from "./utils/sign"
 
 /**
  * Tests that the EcoNFT contract performs correctly on minting of nft's
@@ -20,7 +23,7 @@ describe("EcoNFT tests", async function () {
 
   beforeEach(async function () {
     ;[owner, addr0] = await ethers.getSigners()
-      ;[eco, ecoNft] = await deployEcoNFT()
+    ;[eco, ecoNft] = await deployEcoNFT()
   })
   describe("On nft transfer", async function () {
     it("should not allow the transfer of nft's", async function () {
@@ -286,55 +289,64 @@ describe("EcoNFT tests", async function () {
   })
 
   describe("On unregistration", async function () {
-
     it("should revert if there is no verified claim", async function () {
       const sig = await signUnregistrationMessage(claim, addr0, owner)
-      await expect(ecoNft.unregister(claim, addr0.address, owner.address, sig)).to.be.revertedWith("claim not verified")
+      await expect(
+        ecoNft.unregister(claim, addr0.address, owner.address, sig)
+      ).to.be.revertedWith("claim not verified")
     })
 
     it("should revert if the claim is unrevocable", async function () {
       await registerClaim(claim, 0, false, addr0, owner)
       const sig = await signUnregistrationMessage(claim, addr0, owner)
-      await expect(ecoNft.unregister(claim, addr0.address, owner.address, sig)).to.be.revertedWith("claim unrevocable")
+      await expect(
+        ecoNft.unregister(claim, addr0.address, owner.address, sig)
+      ).to.be.revertedWith("claim unrevocable")
     })
 
     it("should revert if the verifier signature is invalid", async function () {
       await registerClaim(claim, 0, true, addr0, owner)
       const sig = await signUnregistrationMessage(claim, addr0, addr0)
-      await expect(ecoNft.unregister(claim, addr0.address, owner.address, sig)).to.be.revertedWith("invalid verifier signature")
+      await expect(
+        ecoNft.unregister(claim, addr0.address, owner.address, sig)
+      ).to.be.revertedWith("invalid verifier signature")
     })
 
-    it.skip("should succeed in removing a claim", async function () {
+    it("should succeed in removing a claim", async function () {
       await registerClaim(claim, 0, true, addr0, owner)
       const sig = await signUnregistrationMessage(claim, addr0, owner)
 
       await expect(ecoNft.mintNFT(addr0.address, claim))
-      .to.emit(ecoNft, "Mint")
-      .withArgs(addr0.address, claim, 1)
+        .to.emit(ecoNft, "Mint")
+        .withArgs(addr0.address, claim, 1)
 
-      // const [meta, dataAttr, verifierAttrs] = await getMeta(
-      //   await ecoNft.tokenURI(1)
-      // )
-      // expect(meta.name).to.equal(
-      //   "Eco Fragment [data:discord..., verifiers:0xf39fd...]"
-      // )
-      // expect(dataAttr.trait_type).to.equal("Data")
-      // expect(dataAttr.value).to.equal(claim)
-      // expect(verifierAttrs.length).to.equal(1)
+      const [meta, dataAttr, verifierAttrs] = await getMeta(
+        await ecoNft.tokenURI(1)
+      )
+      expect(meta.name).to.equal(
+        "Eco Fragment [data:discord..., verifiers:0xf39fd...]"
+      )
+      expect(dataAttr.trait_type).to.equal("Data")
+      expect(dataAttr.value).to.equal(claim)
+      expect(verifierAttrs.length).to.equal(1)
+      expect(verifierAttrs[0].trait_type).to.equal("Verifier")
+      expect(verifierAttrs[0].value).to.equal(owner.address.toLocaleLowerCase())
 
-      await expect(ecoNft.unregister(claim, addr0.address, owner.address, sig)).to.emit(ecoNft, "UnregisterClaim")
-      .withArgs(claim, addr0.address, owner.address)
+      await expect(ecoNft.unregister(claim, addr0.address, owner.address, sig))
+        .to.emit(ecoNft, "UnregisterClaim")
+        .withArgs(claim, addr0.address, owner.address)
 
-      //check nft is now without verifier
+      // check nft is now without verifier
       const [meta1, dataAttr1, verifierAttrs1] = await getMeta(
         await ecoNft.tokenURI(1)
       )
-      // expect(meta1.name).to.equal(
-      //   "Eco Fragment [data:discord..., verifiers:0xf39fd...]"
-      // )
-      // expect(dataAttr1.trait_type).to.equal("Data")
-      // expect(dataAttr1.value).to.equal(claim)
-      // expect(verifierAttrs1.length).to.equal(0)
+
+      expect(meta1.name).to.equal(
+        "Eco Fragment [data:discord..., verifiers:null]"
+      )
+      expect(dataAttr1.trait_type).to.equal("Data")
+      expect(dataAttr1.value).to.equal(claim)
+      expect(verifierAttrs1.length).to.equal(0)
     })
   })
 
@@ -473,7 +485,7 @@ describe("EcoNFT tests", async function () {
       const [meta, dataAttr, verifierAttrs] = await getMeta(
         await ecoNft.tokenURI(1)
       )
-      
+
       expect(meta.description).to.equal("EcoNFT")
       expect(meta.external_url).to.equal("https://eco.org/")
       expect(meta.image).to.equal(
@@ -521,15 +533,21 @@ describe("EcoNFT tests", async function () {
   })
 
   /**
-  * Registers a claim
-  * 
-  * @param claim the claim to register
-  * @param feeAmount the fee to pay the verifier
-  * @param revocable true if the claim can be revoked in the future by the verifier
-  * @param recipient the recipient on which the claim is being made
-  * @param verifier  the verifier of the claim
-  */
-  async function registerClaim(claim: string, feeAmount: number, revocable: boolean, recipient: SignerWithAddress, verifier: SignerWithAddress) {
+   * Registers a claim
+   *
+   * @param claim the claim to register
+   * @param feeAmount the fee to pay the verifier
+   * @param revocable true if the claim can be revoked in the future by the verifier
+   * @param recipient the recipient on which the claim is being made
+   * @param verifier  the verifier of the claim
+   */
+  async function registerClaim(
+    claim: string,
+    feeAmount: number,
+    revocable: boolean,
+    recipient: SignerWithAddress,
+    verifier: SignerWithAddress
+  ) {
     const [approvSig, verifySig] = await signRegistrationMessage(
       claim,
       feeAmount,
