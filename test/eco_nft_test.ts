@@ -1,7 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
 import { ethers } from "hardhat"
-import { EcoNFT, ERC20Test } from "../typechain"
+import { EcoNFT, EcoTest } from "../typechain"
 import { deployEcoNFT, Meta } from "./utils/fixtures"
 import { signRegistrationMessage } from "./utils/sign"
 
@@ -10,9 +10,9 @@ import { signRegistrationMessage } from "./utils/sign"
  * Note, check encryption https://dev.to/rounakbanik/tutorial-digital-signatures-nft-allowlists-eeb
  */
 describe("EcoNFT tests", async function () {
-  const claim = "ecoID:twitter:21306324"
+  const claim = "discord:21306324"
   let owner: SignerWithAddress, addr0: SignerWithAddress
-  let erc20: ERC20Test
+  let eco: EcoTest
   let ecoNft: EcoNFT
   const feeAmount = 1000
 
@@ -20,7 +20,7 @@ describe("EcoNFT tests", async function () {
 
   beforeEach(async function () {
     ;[owner, addr0] = await ethers.getSigners()
-    ;[erc20, ecoNft] = await deployEcoNFT()
+    ;[eco, ecoNft] = await deployEcoNFT()
   })
   describe("On nft transfer", async function () {
     it("should not allow the transfer of nft's", async function () {
@@ -390,12 +390,12 @@ describe("EcoNFT tests", async function () {
       )
 
       expect(meta.description).to.equal("EcoNFT")
-      expect(meta.external_url).to.equal("https://eco.com/")
+      expect(meta.external_url).to.equal("https://eco.org/")
       expect(meta.image).to.equal(
-        "https://media4.giphy.com/media/iF0sIlvGhJ5G5WCWIx/giphy.gif?cid=ecf05e47v3jsp4s8gj3u8li6kmfx2d6f98si1fn3o8hjg0d7&rid=giphy.gif&ct=g"
+        "https://ipfs.io/ipfs/QmZxvWzRT4Kq3FGEjvMeBaad7qvrSc79MqPggk5At5qxP6"
       )
       expect(meta.name).to.equal(
-        "Eco Identity [data:twitter:213..., verifiers:0xf39f...]"
+        "Eco Fragment [data:discord..., verifiers:0xf39fd...]"
       )
       expect(dataAttr.trait_type).to.equal("Data")
       expect(dataAttr.value).to.equal(claim)
@@ -459,7 +459,7 @@ describe("EcoNFT tests", async function () {
    * @param fee the tokens to transfer
    */
   async function payFee(user: SignerWithAddress, fee: number) {
-    await erc20.transfer(user.address, fee)
-    await erc20.connect(user).approve(ecoNft.address, fee)
+    await eco.transfer(user.address, fee)
+    await eco.connect(user).approve(ecoNft.address, fee)
   }
 })
