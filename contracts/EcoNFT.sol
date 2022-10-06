@@ -69,10 +69,17 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      */
     struct VerifiedClaim {
         string claim;
-        bool revocable;
         uint256 tokenID;
-        address[] verifiers;
+        VerifierRecord[] verifiers;
         mapping(address => bool) verifierMap;
+    }
+
+    /**
+     * Structure for the verifier record
+     */
+    struct VerifierRecord {
+        address verifier;
+        bool revocable;
     }
 
     /**
@@ -172,8 +179,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         VerifiedClaim storage vclaim = _verifiedClaims[recipient][claim];
         require(!vclaim.verifierMap[verifier], "duplicate varifier");
         vclaim.claim = claim;
-        vclaim.revocable = revocable;
-        vclaim.verifiers.push(verifier);
+        vclaim.verifiers.push(VerifierRecord(verifier, revocable));
         vclaim.verifierMap[verifier] = true;
 
         if (feeAmount > 0) {
@@ -202,7 +208,11 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     ) external _validClaim(claim) {
         VerifiedClaim storage vclaim = _verifiedClaims[recipient][claim];
         require(vclaim.verifierMap[verifier], "claim not verified");
-        require(vclaim.revocable, "claim unrevocable");
+        VerifierRecord storage record = getVerifierRecord(
+            verifier,
+            vclaim.verifiers
+        );
+        require(record.revocable, "claim unrevocable");
 
         require(
             _verifyUnregistration(claim, recipient, verifier, verifySig),
@@ -210,7 +220,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         );
 
         vclaim.verifierMap[verifier] = false;
-        removeVerifier(vclaim.verifiers, verifier);
+        removeVerifierRecord(verifier, vclaim.verifiers);
 
         emit UnregisterClaim(claim, recipient, verifier);
     }
@@ -290,7 +300,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
             ? string.concat(
                 _substring(
                     Strings.toHexString(
-                        uint256(uint160(vclaim.verifiers[0])),
+                        uint256(uint160(vclaim.verifiers[0].verifier)),
                         20
                     ),
                     0,
@@ -365,7 +375,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * @return meta the partially constructed json
      */
     function _metaVerifierArray(
-        address[] storage verifiers,
+        VerifierRecord[] storage verifiers,
         uint256 cursor,
         uint256 limit
     ) internal view returns (string memory meta) {
@@ -380,22 +390,27 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         uint256 lastPoint = end - 1;
         for (uint256 i = cursor; i < end; i++) {
             string memory addr = Strings.toHexString(
-                uint256(uint160(verifiers[i])),
+                uint256(uint160(verifiers[i].verifier)),
                 20
             );
+            string memory revocable = verifiers[i].revocable ? "true" : "false";
 
             if (i < lastPoint) {
                 meta = string.concat(
                     meta,
-                    '{"trait_type":"Verifier","value": "',
+                    '{"trait_type":"Verifier","value":"',
                     addr,
+                    '","revocable":"',
+                    revocable,
                     '"},'
                 );
             } else {
                 meta = string.concat(
                     meta,
                     '{"trait_type":"Verifier","value": "',
-                    addr
+                    addr,
+                    '","revocable":"',
+                    revocable
                 );
             }
         }
@@ -568,18 +583,40 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     }
 
     /**
+     * Finds the verifier record in the array and returns it, or reverts
+     *
+     * @param verifier the verified address to search for
+     * @param verifierRecords the verifier records array
+     */
+    function getVerifierRecord(
+        address verifier,
+        VerifierRecord[] storage verifierRecords
+    ) internal view returns (VerifierRecord storage) {
+        for (uint256 i = 0; i < verifierRecords.length; i++) {
+            if (verifierRecords[i].verifier == verifier) {
+                return verifierRecords[i];
+            }
+        }
+        //should never get here
+        revert("invalid verifier");
+    }
+
+    /**
      * Removes a verifier from the verifiers array, does not preserve order
      *
-     * @param verifiers the verified claim array of its verifiers
      * @param verifier the verifier to remove from the array
+     * @param verifierRecords the verifier records array
      */
-    function removeVerifier(address[] storage verifiers, address verifier)
-        internal
-    {
-        for (uint256 i = 0; i < verifiers.length; i++) {
-            if (verifiers[i] == verifier) {
-                verifiers[i] = verifiers[verifiers.length - 1];
-                verifiers.pop();
+    function removeVerifierRecord(
+        address verifier,
+        VerifierRecord[] storage verifierRecords
+    ) internal {
+        for (uint256 i = 0; i < verifierRecords.length; i++) {
+            if (verifierRecords[i].verifier == verifier) {
+                verifierRecords[i] = verifierRecords[
+                    verifierRecords.length - 1
+                ];
+                verifierRecords.pop();
                 return;
             }
         }

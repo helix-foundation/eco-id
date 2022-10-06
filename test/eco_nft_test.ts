@@ -452,7 +452,7 @@ describe("EcoNFT tests", async function () {
       const [approvSig1, verifySig1] = await signRegistrationMessage(
         claim,
         feeAmount,
-        false,
+        true,
         addr0,
         addr1
       )
@@ -468,7 +468,7 @@ describe("EcoNFT tests", async function () {
       await ecoNft.register(
         claim,
         feeAmount,
-        false,
+        true,
         addr0.address,
         addr1.address,
         approvSig1,
@@ -522,6 +522,7 @@ describe("EcoNFT tests", async function () {
       const [, , verifierAttrs2] = await getMeta(
         await ecoNft.tokenURICursor(1, 0, 10)
       )
+
       expect(verifierAttrs2[0].value).to.equal(
         owner.address.toLocaleLowerCase()
       )
