@@ -13,7 +13,8 @@ import {
  * Note, check encryption https://dev.to/rounakbanik/tutorial-digital-signatures-nft-allowlists-eeb
  */
 describe("EcoNFT tests", async function () {
-  const description = "Eco IDs are fully decentralized and permissionless identity primitives designed to be simple, versatile and immutable. They are intended to serve as a basic foundation to bootstrap increasingly-complex and custom reputation and governance systems.\nEco IDs are ERC-721 NFTs that hold arbitrary data attested to by a verifier, along with the identity of the verifier. Consumers of the data in the system can choose which verifiers to listen to and what data to look for. End users request attestations from verifiers, and once granted, are able to mint a new Eco ID with that data.\nThe system allows for both revocable and non-revocable attestations by verifiers. It also allows verifiers the option to charge a fee in $ECO for the minting of the Eco ID.\nIdentity and reputation are built up by combining many individual data points, with optionality for others to selectively pay attention to certain ones. Eco IDs allow for the accumulation of such data points, and in doing so, provide a path to more robust on-chain identity and reputation."
+  const description =
+    "Eco IDs are fully decentralized and permissionless identity primitives designed to be simple, versatile and immutable. They are intended to serve as a basic foundation to bootstrap increasingly-complex and custom reputation and governance systems.\nEco IDs are ERC-721 NFTs that hold arbitrary data attested to by a verifier, along with the identity of the verifier. Consumers of the data in the system can choose which verifiers to listen to and what data to look for. End users request attestations from verifiers, and once granted, are able to mint a new Eco ID with that data.\nThe system allows for both revocable and non-revocable attestations by verifiers. It also allows verifiers the option to charge a fee in $ECO for the minting of the Eco ID.\nIdentity and reputation are built up by combining many individual data points, with optionality for others to selectively pay attention to certain ones. Eco IDs allow for the accumulation of such data points, and in doing so, provide a path to more robust on-chain identity and reputation."
   const claim = "discord:21306324"
   let owner: SignerWithAddress, addr0: SignerWithAddress
   let eco: EcoTest
@@ -324,10 +325,8 @@ describe("EcoNFT tests", async function () {
       const [meta, dataAttr, verifierAttrs] = await getMeta(
         await ecoNft.tokenURI(1)
       )
-      
-      expect(meta.name).to.equal(
-        "Eco ID - discord:21..."
-      )
+
+      expect(meta.name).to.equal("Eco ID - discord:21...")
       expect(dataAttr.trait_type).to.equal("Data")
       expect(dataAttr.value).to.equal(claim)
       expect(verifierAttrs.length).to.equal(1)
@@ -343,9 +342,7 @@ describe("EcoNFT tests", async function () {
         await ecoNft.tokenURI(1)
       )
 
-      expect(meta1.name).to.equal(
-        "Eco ID - discord:21..."
-      )
+      expect(meta1.name).to.equal("Eco ID - discord:21...")
       expect(dataAttr1.trait_type).to.equal("Data")
       expect(dataAttr1.value).to.equal(claim)
       expect(verifierAttrs1.length).to.equal(0)
@@ -493,9 +490,7 @@ describe("EcoNFT tests", async function () {
       expect(meta.image).to.equal(
         "https://ipfs.io/ipfs/QmZxvWzRT4Kq3FGEjvMeBaad7qvrSc79MqPggk5At5qxP6"
       )
-      expect(meta.name).to.equal(
-        "Eco ID - discord:21..."
-      )
+      expect(meta.name).to.equal("Eco ID - discord:21...")
       expect(dataAttr.trait_type).to.equal("Data")
       expect(dataAttr.value).to.equal(claim)
       expect(verifierAttrs.length).to.equal(2)
