@@ -270,7 +270,6 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     function tokenURI(uint256 tokenID)
         public
         view
-        virtual
         override
         returns (string memory)
     {
@@ -291,7 +290,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         uint256 tokenID,
         uint256 cursor,
         uint256 limit
-    ) public view virtual returns (string memory meta) {
+    ) public view returns (string memory meta) {
         require(_exists(tokenID), "non-existent token");
 
         TokenClaim storage tokenClaim = _tokenClaimIDs[tokenID];
@@ -508,8 +507,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      */
     function _isApprovedOrOwner(address, uint256)
         internal
-        view
-        virtual
+        pure
         override
         returns (bool)
     {
