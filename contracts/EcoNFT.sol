@@ -98,7 +98,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     }
 
     /**
-     * Event for when an EcoNFT is minted
+     * Stores the last token index minted
      */
     uint256 public _tokenIDIndex = 1;
 
@@ -118,6 +118,11 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      */
     ERC20 public immutable _token;
 
+    /**
+     * Constructor that sets the ERC20 and emits an initialization event
+     *
+     * @param token the erc20 that is used to pay for registrations
+     */
     constructor(ERC20 token) {
         _token = token;
 
