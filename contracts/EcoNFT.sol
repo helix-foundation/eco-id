@@ -216,7 +216,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     ) external _validClaim(claim) {
         VerifiedClaim storage vclaim = _verifiedClaims[recipient][claim];
         require(vclaim.verifierMap[verifier], "claim not verified");
-        VerifierRecord storage record = getVerifierRecord(
+        VerifierRecord storage record = _getVerifierRecord(
             verifier,
             vclaim.verifiers
         );
@@ -228,7 +228,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         );
 
         vclaim.verifierMap[verifier] = false;
-        removeVerifierRecord(verifier, vclaim.verifiers);
+        _removeVerifierRecord(verifier, vclaim.verifiers);
 
         emit UnregisterClaim(claim, recipient, verifier);
     }
@@ -300,7 +300,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         ];
 
         string memory claim = vclaim.claim;
-        string memory nameFrag = getStringSize(claim) > SUB_NAME_LENGTH
+        string memory nameFrag = _getStringSize(claim) > SUB_NAME_LENGTH
             ? string.concat(_substring(claim, 0, SUB_NAME_LENGTH + 1), "...")
             : claim;
         bool hasVerifiers = vclaim.verifiers.length > 0;
@@ -444,7 +444,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         address verifier,
         bytes calldata approveSig
     ) internal pure returns (bool) {
-        bytes32 hash = getApproveHash(
+        bytes32 hash = _getApproveHash(
             claim,
             feeAmount,
             revocable,
@@ -474,7 +474,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         address verifier,
         bytes calldata signature
     ) internal pure returns (bool) {
-        bytes32 hash = getRegistrationHash(
+        bytes32 hash = _getRegistrationHash(
             claim,
             feeAmount,
             revocable,
@@ -498,7 +498,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         address verifier,
         bytes calldata signature
     ) internal pure returns (bool) {
-        bytes32 hash = getUnregistrationHash(claim, recipient, verifier);
+        bytes32 hash = _getUnregistrationHash(claim, recipient, verifier);
         return hash.recover(signature) == verifier;
     }
 
@@ -524,7 +524,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * @param revocable true if the verifier can revoke their verification of the claim in the future
      * @param recipient the address of the user that is having a claim registered
      */
-    function getRegistrationHash(
+    function _getRegistrationHash(
         string calldata claim,
         uint256 feeAmount,
         bool revocable,
@@ -542,7 +542,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * @param recipient the address of the user that owns that claim
      * @param verifier  the address of the verifying agent
      */
-    function getUnregistrationHash(
+    function _getUnregistrationHash(
         string calldata claim,
         address recipient,
         address verifier
@@ -561,7 +561,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * @param recipient the address of the user that is having a claim registered
      * @param verifier the address of the verifier of the claim
      */
-    function getApproveHash(
+    function _getApproveHash(
         string calldata claim,
         uint256 feeAmount,
         bool revocable,
@@ -596,7 +596,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * @param verifier the verified address to search for
      * @param verifierRecords the verifier records array
      */
-    function getVerifierRecord(
+    function _getVerifierRecord(
         address verifier,
         VerifierRecord[] storage verifierRecords
     ) internal view returns (VerifierRecord storage) {
@@ -615,7 +615,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * @param verifier the verifier to remove from the array
      * @param verifierRecords the verifier records array
      */
-    function removeVerifierRecord(
+    function _removeVerifierRecord(
         address verifier,
         VerifierRecord[] storage verifierRecords
     ) internal {
@@ -651,7 +651,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      *
      * @param str string to check
      */
-    function getStringSize(string memory str) internal pure returns (uint256) {
+    function _getStringSize(string memory str) internal pure returns (uint256) {
         return bytes(str).length;
     }
 }
