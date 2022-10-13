@@ -184,10 +184,11 @@ describe("EcoNFT tests", async function () {
     })
 
     it("should register and emit on valid registration", async function () {
+      const revocable = true
       const [approvSig, verifySig] = await signRegistrationMessage(
         claim,
         feeAmount,
-        true,
+        revocable,
         addr0,
         owner
       )
@@ -197,7 +198,7 @@ describe("EcoNFT tests", async function () {
         ecoNft.register(
           claim,
           feeAmount,
-          true,
+          revocable,
           addr0.address,
           owner.address,
           approvSig,
@@ -205,7 +206,7 @@ describe("EcoNFT tests", async function () {
         )
       )
         .to.emit(ecoNft, "RegisterClaim")
-        .withArgs(claim, feeAmount, addr0.address, owner.address)
+        .withArgs(claim, feeAmount, revocable, addr0.address, owner.address)
     })
 
     it("should fail when the same verifier attempts to verify the same claim twice", async function () {
@@ -242,18 +243,19 @@ describe("EcoNFT tests", async function () {
     })
 
     it("should allow multiple verifiers to verify the same claim", async function () {
+      const revocable = true
       const [, , addr1] = await ethers.getSigners()
       const [approvSig1, verifySig1] = await signRegistrationMessage(
         claim,
         feeAmount,
-        true,
+        revocable,
         addr0,
         owner
       )
       const [approvSig2, verifySig2] = await signRegistrationMessage(
         claim,
         feeAmount,
-        true,
+        revocable,
         addr0,
         addr1
       )
@@ -262,7 +264,7 @@ describe("EcoNFT tests", async function () {
         ecoNft.register(
           claim,
           feeAmount,
-          true,
+          revocable,
           addr0.address,
           owner.address,
           approvSig1,
@@ -270,13 +272,13 @@ describe("EcoNFT tests", async function () {
         )
       )
         .to.emit(ecoNft, "RegisterClaim")
-        .withArgs(claim, feeAmount, addr0.address, owner.address)
+        .withArgs(claim, feeAmount, revocable, addr0.address, owner.address)
 
       await expect(
         ecoNft.register(
           claim,
           feeAmount,
-          true,
+          revocable,
           addr0.address,
           addr1.address,
           approvSig2,
@@ -284,7 +286,7 @@ describe("EcoNFT tests", async function () {
         )
       )
         .to.emit(ecoNft, "RegisterClaim")
-        .withArgs(claim, feeAmount, addr0.address, addr1.address)
+        .withArgs(claim, feeAmount, revocable, addr0.address, addr1.address)
     })
   })
 
@@ -400,6 +402,7 @@ describe("EcoNFT tests", async function () {
     })
 
     it("should allow minting of multiple nfts for different verified claims", async function () {
+      const revocable = true
       await expect(ecoNft.mintNFT(addr0.address, claim))
         .to.emit(ecoNft, "Mint")
         .withArgs(addr0.address, claim, 1)
@@ -409,7 +412,7 @@ describe("EcoNFT tests", async function () {
       const [approvSig, verifySig] = await signRegistrationMessage(
         claim2,
         feeAmount,
-        true,
+        revocable,
         addr0,
         owner
       )
@@ -419,7 +422,7 @@ describe("EcoNFT tests", async function () {
         ecoNft.register(
           claim2,
           feeAmount,
-          true,
+          revocable,
           addr0.address,
           owner.address,
           approvSig,
@@ -427,7 +430,7 @@ describe("EcoNFT tests", async function () {
         )
       )
         .to.emit(ecoNft, "RegisterClaim")
-        .withArgs(claim2, feeAmount, addr0.address, owner.address)
+        .withArgs(claim2, feeAmount, revocable, addr0.address, owner.address)
 
       await expect(ecoNft.mintNFT(addr0.address, claim2))
         .to.emit(ecoNft, "Mint")
