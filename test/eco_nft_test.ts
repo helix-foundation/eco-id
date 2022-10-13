@@ -23,7 +23,7 @@ describe("EcoNFT tests", async function () {
 
   beforeEach(async function () {
     ;[owner, addr0] = await ethers.getSigners()
-    ;[eco, ecoNft] = await deployEcoNFT()
+      ;[eco, ecoNft] = await deployEcoNFT()
   })
   describe("On nft transfer", async function () {
     it("should not allow the transfer of nft's", async function () {
@@ -314,7 +314,7 @@ describe("EcoNFT tests", async function () {
       ).to.be.revertedWith("invalid verifier signature")
     })
 
-    it("should succeed in removing a claim", async function () {
+    it.only("should succeed in removing a claim", async function () {
       await registerClaim(claim, 0, true, addr0, owner)
       const sig = await signUnregistrationMessage(claim, addr0, owner)
 
@@ -580,7 +580,10 @@ describe("EcoNFT tests", async function () {
   async function getMeta(
     metaEncoded: string
   ): Promise<[Meta, NftAttribute, NftAttribute[]]> {
-    const meta: Meta = JSON.parse(atob(metaEncoded.split(",")[1]))
+    const encodedMeta = metaEncoded.split(",")[1]
+    const decodedMeta = Buffer.from(encodedMeta, 'base64').toString('utf-8')
+    const meta: Meta = JSON.parse(decodedMeta)
+
     // @ts-ignore
     const dataAttr: NftAttribute = meta.attributes[0]
     // @ts-ignore
