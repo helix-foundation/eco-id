@@ -37,11 +37,17 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     uint256 public constant SUB_NAME_LENGTH = 6;
 
     /**
+     * Event for when the constructor has finished
+     */
+    event InitializeEcoNFT();
+
+    /**
      * Event for when a claim is verified for a recipient
      */
     event RegisterClaim(
         string indexed claim,
         uint256 feeAmount,
+        bool revocable,
         address indexed recipient,
         address indexed verifier
     );
@@ -114,6 +120,8 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
 
     constructor(ERC20 token) {
         _token = token;
+
+        emit InitializeEcoNFT();
     }
 
     /**
@@ -189,7 +197,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
             );
         }
 
-        emit RegisterClaim(claim, feeAmount, recipient, verifier);
+        emit RegisterClaim(claim, feeAmount, revocable, recipient, verifier);
     }
 
     /**
