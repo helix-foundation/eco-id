@@ -71,6 +71,51 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     );
 
     /**
+     * Error for when the approval signature during registration is invalid
+     */
+    error InvalidRegistrationApproveSignature();
+
+    /**
+     * Error for when the verifier signature during registration is invalid
+     */
+    error InvalidRegistrationVerifierSignature();
+
+    /**
+     * Error for when a registration with the same verifier is attempted on a claim a second time
+     */
+    error DuplicateVerifier(address verifier);
+
+    /**
+     * Error for when a claim has not been verified or doesn't exist for a user
+     */
+    error UnverifiedClaim();
+
+    /**
+     * Error for when trying to deregister a claim that is not revocable
+     */
+    error UnrevocableClaim();
+
+    /**
+     * Error for when trying to deregister and the verifier signature is invalid
+     */
+    error InvalidVerifierSignature();
+
+    /**
+     * Error for when a user trys to mint an NFT for a claim that already has a minted NFT
+     */
+    error NftAlreadyMinted(uint256 tokenID);
+
+    /**
+     * Error for when trying to reference an NFT token that doesn't exist
+     */
+    error NonExistantToken();
+
+    /**
+     * Error for when trying to register an empty claim
+     */
+    error EmptyClaim();
+
+    /**
      * Structure for storing a verified claim
      */
     struct VerifiedClaim {
@@ -161,40 +206,41 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         bytes calldata approveSig,
         bytes calldata verifySig
     ) external _validClaim(claim) {
-        require(
-            _verifyRegistrationApprove(
+        if (
+            !_verifyRegistrationApprove(
                 claim,
                 feeAmount,
                 revocable,
                 recipient,
                 verifier,
                 approveSig
-            ),
-            "invalid recipient signature"
-        );
-        require(
-            _verifyRegistrationVerify(
+            )
+        ) {
+            revert InvalidRegistrationApproveSignature();
+        }
+        if (
+            !_verifyRegistrationVerify(
                 claim,
                 feeAmount,
                 revocable,
                 recipient,
                 verifier,
                 verifySig
-            ),
-            "invalid verifier signature"
-        );
+            )
+        ) {
+            revert InvalidRegistrationVerifierSignature();
+        }
 
         VerifiedClaim storage vclaim = _verifiedClaims[recipient][claim];
-        require(!vclaim.verifierMap[verifier], "duplicate varifier");
+        if (vclaim.verifierMap[verifier]) {
+            revert DuplicateVerifier({verifier: verifier});
+        }
         vclaim.claim = claim;
         vclaim.verifiers.push(VerifierRecord(verifier, revocable));
         vclaim.verifierMap[verifier] = true;
 
         if (feeAmount > 0) {
-            require(
-                _token.transferFrom(recipient, verifier, feeAmount),
-                "fee payment failed"
-            );
+            _token.transferFrom(recipient, verifier, feeAmount);
         }
 
         emit RegisterClaim(claim, feeAmount, revocable, recipient, verifier);
@@ -215,17 +261,22 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         bytes calldata verifySig
     ) external _validClaim(claim) {
         VerifiedClaim storage vclaim = _verifiedClaims[recipient][claim];
-        require(vclaim.verifierMap[verifier], "claim not verified");
+        if (!vclaim.verifierMap[verifier]) {
+            revert UnverifiedClaim();
+        }
+
         VerifierRecord storage record = getVerifierRecord(
             verifier,
             vclaim.verifiers
         );
-        require(record.revocable, "claim unrevocable");
 
-        require(
-            _verifyUnregistration(claim, recipient, verifier, verifySig),
-            "invalid verifier signature"
-        );
+        if (!record.revocable) {
+            revert UnrevocableClaim();
+        }
+
+        if (!_verifyUnregistration(claim, recipient, verifier, verifySig)) {
+            revert InvalidVerifierSignature();
+        }
 
         vclaim.verifierMap[verifier] = false;
         removeVerifierRecord(verifier, vclaim.verifiers);
@@ -246,8 +297,13 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         returns (uint256 tokenID)
     {
         VerifiedClaim storage vclaim = _verifiedClaims[recipient][claim];
-        require(vclaim.verifiers.length > 0, "nft claim non-existant");
-        require(vclaim.tokenID == 0, "token already minted for claim");
+        if (vclaim.verifiers.length == 0) {
+            revert UnverifiedClaim();
+        }
+
+        if (vclaim.tokenID != 0) {
+            revert NftAlreadyMinted({tokenID: vclaim.tokenID});
+        }
 
         tokenID = _tokenIDIndex++;
 
@@ -292,7 +348,9 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         uint256 cursor,
         uint256 limit
     ) public view virtual returns (string memory meta) {
-        require(_exists(tokenID), "non-existent token");
+        if(!_exists(tokenID)){
+            revert NonExistantToken();
+        }
 
         TokenClaim storage tokenClaim = _tokenClaimIDs[tokenID];
         VerifiedClaim storage vclaim = _verifiedClaims[tokenClaim.recipient][
@@ -586,7 +644,9 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * @param claim the claim to check
      */
     modifier _validClaim(string memory claim) {
-        require(bytes(claim).length != 0, "invalid empty claim");
+        if (bytes(claim).length == 0) {
+            revert EmptyClaim();
+        }
         _;
     }
 

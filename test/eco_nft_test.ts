@@ -23,7 +23,7 @@ describe("EcoNFT tests", async function () {
 
   beforeEach(async function () {
     ;[owner, addr0] = await ethers.getSigners()
-    ;[eco, ecoNft] = await deployEcoNFT()
+      ;[eco, ecoNft] = await deployEcoNFT()
   })
   describe("On nft transfer", async function () {
     it("should not allow the transfer of nft's", async function () {
@@ -78,7 +78,7 @@ describe("EcoNFT tests", async function () {
           approvSig,
           verifySig
         )
-      ).to.be.revertedWith("invalid empty claim")
+      ).to.be.revertedWith("EmptyClaim()")
     })
 
     it("should fail an invalid approval signature", async function () {
@@ -99,7 +99,7 @@ describe("EcoNFT tests", async function () {
           verifySig,
           verifySig
         )
-      ).to.be.revertedWith("invalid recipient signature")
+      ).to.be.revertedWith("InvalidRegistrationApproveSignature()")
     })
 
     it("should fail an invalid verify signature", async function () {
@@ -129,7 +129,7 @@ describe("EcoNFT tests", async function () {
           approvSig,
           verifySig
         )
-      ).to.be.revertedWith("invalid verifier signature")
+      ).to.be.revertedWith("InvalidRegistrationVerifierSignature()")
     })
 
     it("should fail on a fee amount difference", async function () {
@@ -159,7 +159,7 @@ describe("EcoNFT tests", async function () {
           approvSig,
           verifySig
         )
-      ).to.be.revertedWith("invalid verifier signature")
+      ).to.be.revertedWith("InvalidRegistrationVerifierSignature()")
     })
 
     it("should fail on payment transfer failure", async function () {
@@ -239,7 +239,7 @@ describe("EcoNFT tests", async function () {
           approvSig,
           verifySig
         )
-      ).to.be.revertedWith("duplicate varifier")
+      ).to.be.revertedWith(`DuplicateVerifier(\"${owner.address}\")`)
     })
 
     it("should allow multiple verifiers to verify the same claim", async function () {
@@ -295,7 +295,7 @@ describe("EcoNFT tests", async function () {
       const sig = await signUnregistrationMessage(claim, addr0, owner)
       await expect(
         ecoNft.unregister(claim, addr0.address, owner.address, sig)
-      ).to.be.revertedWith("claim not verified")
+      ).to.be.revertedWith("UnverifiedClaim()")
     })
 
     it("should revert if the claim is unrevocable", async function () {
@@ -303,7 +303,7 @@ describe("EcoNFT tests", async function () {
       const sig = await signUnregistrationMessage(claim, addr0, owner)
       await expect(
         ecoNft.unregister(claim, addr0.address, owner.address, sig)
-      ).to.be.revertedWith("claim unrevocable")
+      ).to.be.revertedWith("UnrevocableClaim()")
     })
 
     it("should revert if the verifier signature is invalid", async function () {
@@ -311,7 +311,7 @@ describe("EcoNFT tests", async function () {
       const sig = await signUnregistrationMessage(claim, addr0, addr0)
       await expect(
         ecoNft.unregister(claim, addr0.address, owner.address, sig)
-      ).to.be.revertedWith("invalid verifier signature")
+      ).to.be.revertedWith("InvalidVerifierSignature()")
     })
 
     it("should succeed in removing a claim", async function () {
@@ -378,10 +378,10 @@ describe("EcoNFT tests", async function () {
       // wrong claim
       await expect(
         ecoNft.mintNFT(addr0.address, claim + "1")
-      ).to.be.revertedWith("nft claim non-existant")
+      ).to.be.revertedWith("UnverifiedClaim()")
       // wrong address
       await expect(ecoNft.mintNFT(owner.address, claim)).to.be.revertedWith(
-        "nft claim non-existant"
+        "UnverifiedClaim()"
       )
     })
 
@@ -392,12 +392,13 @@ describe("EcoNFT tests", async function () {
     })
 
     it("should revert nft has already been minted for claim", async function () {
+      const tokenID = 1
       await expect(ecoNft.mintNFT(addr0.address, claim))
         .to.emit(ecoNft, "Mint")
-        .withArgs(addr0.address, claim, 1)
+        .withArgs(addr0.address, claim, tokenID)
 
       await expect(ecoNft.mintNFT(addr0.address, claim)).to.be.revertedWith(
-        "token already minted for claim"
+        `NftAlreadyMinted(${tokenID})`
       )
     })
 
@@ -481,7 +482,7 @@ describe("EcoNFT tests", async function () {
     })
 
     it("should revert on metadata for non-existant token", async function () {
-      await expect(ecoNft.tokenURI(10)).to.be.revertedWith("non-existent token")
+      await expect(ecoNft.tokenURI(10)).to.be.revertedWith("NonExistantToken()")
     })
 
     it("should dispay the verifier of a claim", async function () {
