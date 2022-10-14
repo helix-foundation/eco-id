@@ -273,7 +273,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
             revert UnverifiedClaim();
         }
 
-        VerifierRecord storage record = getVerifierRecord(
+        VerifierRecord storage record = _getVerifierRecord(
             verifier,
             vclaim.verifiers
         );
