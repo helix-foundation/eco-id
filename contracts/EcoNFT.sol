@@ -45,7 +45,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * Event for when a claim is verified for a recipient
      */
     event RegisterClaim(
-        string indexed claim,
+        string claim,
         uint256 feeAmount,
         bool revocable,
         address indexed recipient,
@@ -56,7 +56,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
      * Event for when a claim is unregistered by the verifier
      */
     event UnregisterClaim(
-        string indexed claim,
+        string claim,
         address indexed recipient,
         address indexed verifier
     );
@@ -64,11 +64,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     /**
      * Event for when an EcoNFT is minted
      */
-    event Mint(
-        address indexed recipient,
-        string indexed claim,
-        uint256 tokenID
-    );
+    event Mint(address indexed recipient, string claim, uint256 tokenID);
 
     /**
      * Structure for storing a verified claim
