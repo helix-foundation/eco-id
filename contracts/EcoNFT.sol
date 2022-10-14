@@ -348,7 +348,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         uint256 cursor,
         uint256 limit
     ) public view virtual returns (string memory meta) {
-        if(!_exists(tokenID)){
+        if (!_exists(tokenID)) {
             revert NonExistantToken();
         }
 

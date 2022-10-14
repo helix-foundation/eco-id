@@ -23,7 +23,7 @@ describe("EcoNFT tests", async function () {
 
   beforeEach(async function () {
     ;[owner, addr0] = await ethers.getSigners()
-      ;[eco, ecoNft] = await deployEcoNFT()
+    ;[eco, ecoNft] = await deployEcoNFT()
   })
   describe("On nft transfer", async function () {
     it("should not allow the transfer of nft's", async function () {
@@ -239,7 +239,7 @@ describe("EcoNFT tests", async function () {
           approvSig,
           verifySig
         )
-      ).to.be.revertedWith(`DuplicateVerifier(\"${owner.address}\")`)
+      ).to.be.revertedWith(`DuplicateVerifier("${owner.address}")`)
     })
 
     it("should allow multiple verifiers to verify the same claim", async function () {
