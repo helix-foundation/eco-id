@@ -107,6 +107,11 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
     error NonExistantToken();
 
     /**
+     * Error for when the fee payment for registration fails
+     */
+    error FeePaymentFailed();
+
+    /**
      * Error for when trying to register an empty claim
      */
     error EmptyClaim();
@@ -236,7 +241,9 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT") {
         vclaim.verifierMap[verifier] = true;
 
         if (feeAmount > 0) {
-            _token.transferFrom(recipient, verifier, feeAmount);
+            if (!_token.transferFrom(recipient, verifier, feeAmount)) {
+                revert FeePaymentFailed();
+            }
         }
 
         emit RegisterClaim(claim, feeAmount, revocable, recipient, verifier);
