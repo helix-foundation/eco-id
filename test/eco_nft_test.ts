@@ -12,7 +12,7 @@ import {
  * Tests that the EcoNFT contract performs correctly on minting of nft's
  * Note, check encryption https://dev.to/rounakbanik/tutorial-digital-signatures-nft-allowlists-eeb
  */
-describe("EcoNFT tests", async function () {
+describe.only("EcoNFT tests", async function () {
   const claim = "discord:21306324"
   let owner: SignerWithAddress, addr0: SignerWithAddress
   let eco: EcoTest
@@ -26,7 +26,7 @@ describe("EcoNFT tests", async function () {
     ;[eco, ecoNft] = await deployEcoNFT()
   })
   describe("On nft transfer", async function () {
-    it("should not allow the transfer of nft's", async function () {
+    it.only("should not allow the transfer of nft's", async function () {
       const [approvSig, verifySig] = await signRegistrationMessage(
         claim,
         feeAmount,
