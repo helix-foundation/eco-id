@@ -1,12 +1,15 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
+import { time } from "console"
 import { ethers } from "hardhat"
 import { EcoNFT, EcoTest } from "../typechain-types"
 import { deployEcoNFT, Meta } from "./utils/fixtures"
 import {
   signRegistrationMessage,
+  signRegistrationTypeMessage,
   signUnregistrationMessage,
 } from "./utils/sign"
+import { latestBlockTimestamp } from "./utils/time"
 
 /**
  * Tests that the EcoNFT contract performs correctly on minting of nft's
@@ -18,43 +21,52 @@ describe.only("EcoNFT tests", async function () {
   let eco: EcoTest
   let ecoNft: EcoNFT
   const feeAmount = 1000
+  let deadline: number, chainID: number, nonce: number
 
   type NftAttribute = { trait_type: string; value: string }
 
   beforeEach(async function () {
     ;[owner, addr0] = await ethers.getSigners()
-    ;[eco, ecoNft] = await deployEcoNFT()
+      ;[eco, ecoNft] = await deployEcoNFT()
+    deadline = await latestBlockTimestamp() + 10000
+    chainID = (await ethers.provider.getNetwork()).chainId
+    nonce = (await ecoNft.nonces(claim)).toNumber()
   })
   describe("On nft transfer", async function () {
     it.only("should not allow the transfer of nft's", async function () {
-      const [approvSig, verifySig] = await signRegistrationMessage(
-        claim,
-        feeAmount,
-        false,
-        addr0,
-        owner
-      )
+      const revocable = false
+      // const [approvSig, verifySig] = await signRegistrationMessage(
+      //   claim,
+      //   feeAmount,
+      //   false,
+      //   addr0,
+      //   owner
+      // )
 
+      const [approvSig, verifySig] = await signRegistrationTypeMessage(claim, feeAmount, revocable, addr0, owner, deadline, nonce, chainID, ecoNft.address)
+      console.log(approvSig)
+      console.log(verifySig)
       await payFee(addr0, feeAmount)
 
       await ecoNft.register(
         claim,
         feeAmount,
-        false,
+        revocable,
         addr0.address,
         owner.address,
+        deadline,
         approvSig,
         verifySig
       )
 
-      const tokenID = 1
-      await expect(ecoNft.mintNFT(addr0.address, claim))
-        .to.emit(ecoNft, "Mint")
-        .withArgs(addr0.address, claim, tokenID)
+      // const tokenID = 1
+      // await expect(ecoNft.mintNFT(addr0.address, claim))
+      //   .to.emit(ecoNft, "Mint")
+      //   .withArgs(addr0.address, claim, tokenID)
 
-      await expect(
-        ecoNft.transferFrom(addr0.address, owner.address, tokenID)
-      ).to.be.revertedWith("ERC721: caller is not token owner nor approved")
+      // await expect(
+      //   ecoNft.transferFrom(addr0.address, owner.address, tokenID)
+      // ).to.be.revertedWith("ERC721: caller is not token owner nor approved")
     })
   })
 

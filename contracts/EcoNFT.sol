@@ -44,28 +44,16 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
     uint256 public constant SUB_NAME_LENGTH = 6;
 
     /**
-     * The register function signature
-     */
-    string public constant REGISTER_FUNCTION_SIGNATURE =
-        "register(string calldata claim,uint256 feeAmount,bool revocable,address recipient,address verifier,bytes calldata approveSig,bytes calldata verifySig)";
-
-    /**
      * The hash of the register function signature
      */
     bytes32 private constant REGISTER_TYPEHASH =
-        keccak256(bytes(REGISTER_FUNCTION_SIGNATURE));
-
-    /**
-     * The unregister function signature
-     */
-    string public constant UNREGISTER_FUNCTION_SIGNATURE =
-        "unregister(string calldata claim,address recipient,address verifier,bytes calldata verifySig)";
+        keccak256("Register(string claim,uint256 feeAmount,bool revocable,address recipient,address verifier,uint256 deadline,uint256 nonce)");
 
     /**
      * The hash of the register function signature
      */
     bytes32 private constant UNREGISTER_TYPEHASH =
-        keccak256(bytes(UNREGISTER_FUNCTION_SIGNATURE));
+        keccak256("unregister(string calldata claim,address recipient,address verifier,bytes calldata verifySig)");
 
     /**
      * Event for when the constructor has finished
@@ -672,8 +660,8 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
                         feeAmount,
                         revocable,
                         recipient,
-                        _useNonce(claim),
-                        deadline
+                        deadline,
+                        _useNonce(claim)
                     )
                 )
             );
@@ -708,8 +696,8 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
                         revocable,
                         recipient,
                         verifier,
-                        nonce,
-                        deadline
+                        deadline,
+                        nonce
                     )
                 )
             );
@@ -737,8 +725,8 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
                         claim,
                         recipient,
                         verifier,
-                        _useNonce(claim),
-                        deadline
+                        deadline,
+                        _useNonce(claim)
                     )
                 )
             );
