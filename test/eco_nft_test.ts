@@ -492,7 +492,7 @@ describe("EcoNFT tests", async function () {
       expect(meta.description).to.equal(description)
       expect(meta.external_url).to.equal("https://eco.org/eco-id")
       expect(meta.image).to.equal(
-        "https://ipfs.io/ipfs/QmZxvWzRT4Kq3FGEjvMeBaad7qvrSc79MqPggk5At5qxP6"
+        "https://ipfs.io/ipfs/QmWZFvb88KDos7BYyf52btxPuEEifZN7i5CA2YfC3azS8J"
       )
       expect(meta.name).to.equal("Eco ID - discord:21...")
       expect(dataAttr.trait_type).to.equal("Data")
