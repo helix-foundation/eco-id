@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./Base64.sol";
 import "hardhat/console.sol";
+
 /**
  * This is the EcoNFT for verifying an arbitraty claim.
  */
@@ -44,16 +45,28 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
     uint256 public constant SUB_NAME_LENGTH = 6;
 
     /**
-     * The hash of the register function signature
+     * The hash of the register function signature for the recipient
      */
-    bytes32 private constant REGISTER_TYPEHASH =
-        keccak256("Register(string claim,uint256 feeAmount,bool revocable,address recipient,address verifier,uint256 deadline,uint256 nonce)");
+    bytes32 private constant REGISTER_APPROVE_TYPEHASH =
+        keccak256(
+            "Register(string claim,uint256 feeAmount,bool revocable,address recipient,address verifier,uint256 deadline,uint256 nonce)"
+        );
+    
+    /**
+     * The hash of the register function signature for the verifier
+     */
+    bytes32 private constant REGISTER_VERIFIER_TYPEHASH =
+        keccak256(
+            "Register(string claim,uint256 feeAmount,bool revocable,address recipient,uint256 deadline,uint256 nonce)"
+        );
 
     /**
      * The hash of the register function signature
      */
     bytes32 private constant UNREGISTER_TYPEHASH =
-        keccak256("unregister(string calldata claim,address recipient,address verifier,bytes calldata verifySig)");
+        keccak256(
+            "unregister(string calldata claim,address recipient,address verifier,bytes calldata verifySig)"
+        );
 
     /**
      * Event for when the constructor has finished
@@ -239,6 +252,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
     ) external _validClaim(claim) {
         console.log(block.chainid);
         console.log("start verification");
+        uint256 nonce = _useNonce(claim);
         if (
             !_verifyRegistrationApprove(
                 claim,
@@ -247,6 +261,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
                 recipient,
                 verifier,
                 deadline,
+                nonce,
                 approveSig
             )
         ) {
@@ -261,6 +276,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
                 recipient,
                 verifier,
                 deadline,
+                nonce,
                 verifySig
             )
         ) {
@@ -297,7 +313,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
         string calldata claim,
         address recipient,
         address verifier,
-        uint256 deadline, 
+        uint256 deadline,
         bytes calldata verifySig
     ) external _validClaim(claim) {
         VerifiedClaim storage vclaim = _verifiedClaims[recipient][claim];
@@ -314,7 +330,16 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
             revert UnrevocableClaim();
         }
 
-        if (!_verifyUnregistration(claim, recipient, verifier, deadline, verifySig)) {
+        if (
+            !_verifyUnregistration(
+                claim,
+                recipient,
+                verifier,
+                deadline,
+                _useNonce(claim),
+                verifySig
+            )
+        ) {
             revert InvalidVerifierSignature();
         }
 
@@ -559,15 +584,17 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
         address recipient,
         address verifier,
         uint256 deadline,
+        uint256 nonce,
         bytes calldata approveSig
-    ) internal returns (bool) {
+    ) internal view returns (bool) {
         bytes32 hash = _getApproveHash(
             claim,
             feeAmount,
             revocable,
             recipient,
             verifier,
-            deadline
+            deadline,
+            nonce
         );
         return hash.recover(approveSig) == recipient;
     }
@@ -581,7 +608,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
      * @param recipient the address of the recipient of a registration
      * @param verifier  the address of the verifying agent
      * @param deadline the deadline in milliseconds from epoch that the signature expires
-     * @param signature signature that we are validating comes from the verifier
+     * @param verifierSig signature that we are validating comes from the verifier
      *
      * @return true if the signature is valid, false otherwise
      */
@@ -592,16 +619,18 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
         address recipient,
         address verifier,
         uint256 deadline,
-        bytes calldata signature
-    ) internal returns (bool) {
-        bytes32 hash = _getRegistrationHash(
+        uint256 nonce,
+        bytes calldata verifierSig
+    ) internal view returns (bool) {
+        bytes32 hash = _getVerificationHash(
             claim,
             feeAmount,
             revocable,
             recipient,
-            deadline
+            deadline,
+            nonce
         );
-        return hash.recover(signature) == verifier;
+        return hash.recover(verifierSig) == verifier;
     }
 
     /**
@@ -611,6 +640,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
      * @param recipient  the address of the recipient
      * @param verifier  the address of the verifying agent
      * @param deadline the deadline in milliseconds from epoch that the signature expires
+     * @param nonce the nonce for the signatures for this claim registration
      * @param signature signature that we are validating comes from the verifier
      * @return true if the signature is valid, false otherwise
      */
@@ -619,9 +649,16 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
         address recipient,
         address verifier,
         uint256 deadline,
+        uint256 nonce,
         bytes calldata signature
-    ) internal returns (bool) {
-        bytes32 hash = _getUnregistrationHash(claim, recipient, verifier, deadline);
+    ) internal view returns (bool) {
+        bytes32 hash = _getUnregistrationHash(
+            claim,
+            recipient,
+            verifier,
+            deadline,
+            nonce
+        );
         return hash.recover(signature) == verifier;
     }
 
@@ -639,38 +676,6 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
     }
 
     /**
-     * Hashes the input parameters for the registration signature verification
-     *
-     * @param claim the claim being attested to
-     * @param feeAmount the cost to register the claim the recipient is willing to pay
-     * @param revocable true if the verifier can revoke their verification of the claim in the future
-     * @param recipient the address of the user that is having a claim registered
-     * @param deadline the deadline in milliseconds from epoch that the signature expires
-     */
-    function _getRegistrationHash(
-        string calldata claim,
-        uint256 feeAmount,
-        bool revocable,
-        address recipient,
-        uint256 deadline
-    ) private returns (bytes32) {
-        return
-            _hashTypedDataV4(
-                keccak256(
-                    abi.encode(
-                        REGISTER_TYPEHASH,
-                        keccak256(bytes(claim)),
-                        feeAmount,
-                        revocable,
-                        recipient,
-                        deadline,
-                        _useNonce(claim)
-                    )
-                )
-            );
-    }
-
-    /**
      * Hashes the input parameters for the approval signature verification
      *
      * @param claim the claim being attested to
@@ -679,6 +684,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
      * @param recipient the address of the user that is having a claim registered
      * @param verifier the address of the verifier of the claim
      * @param deadline the deadline in milliseconds from epoch that the signature expires
+     * @param nonce the nonce for the signatures for this claim registration
      */
     function _getApproveHash(
         string calldata claim,
@@ -686,19 +692,53 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
         bool revocable,
         address recipient,
         address verifier,
-        uint256 deadline
-    ) private returns (bytes32) {
-        uint256 nonce = _useNonce(claim);
+        uint256 deadline,
+        uint256 nonce
+    ) private view returns (bytes32) {
         return
             _hashTypedDataV4(
                 keccak256(
                     abi.encode(
-                        REGISTER_TYPEHASH,
+                        REGISTER_APPROVE_TYPEHASH,
                         keccak256(bytes(claim)),
                         feeAmount,
                         revocable,
                         recipient,
                         verifier,
+                        deadline,
+                        nonce
+                    )
+                )
+            );
+    }
+    
+    /**
+     * Hashes the input parameters for the registration signature verification
+     *
+     * @param claim the claim being attested to
+     * @param feeAmount the cost to register the claim the recipient is willing to pay
+     * @param revocable true if the verifier can revoke their verification of the claim in the future
+     * @param recipient the address of the user that is having a claim registered
+     * @param deadline the deadline in milliseconds from epoch that the signature expires
+     * @param nonce the nonce for the signatures for this claim registration
+     */
+    function _getVerificationHash(
+        string calldata claim,
+        uint256 feeAmount,
+        bool revocable,
+        address recipient,
+        uint256 deadline,
+        uint256 nonce
+    ) private view returns (bytes32) {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        REGISTER_VERIFIER_TYPEHASH,
+                        keccak256(bytes(claim)),
+                        feeAmount,
+                        revocable,
+                        recipient,
                         deadline,
                         nonce
                     )
@@ -713,13 +753,15 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
      * @param recipient the address of the user that owns that claim
      * @param verifier  the address of the verifying agent
      * @param deadline the deadline in milliseconds from epoch that the signature expires
+     * @param nonce the nonce for the signatures for this claim registration
      */
     function _getUnregistrationHash(
         string calldata claim,
         address recipient,
         address verifier,
-        uint256 deadline
-    ) private returns (bytes32) {
+        uint256 deadline,
+        uint256 nonce
+    ) private view returns (bytes32) {
         return
             _hashTypedDataV4(
                 keccak256(
@@ -729,7 +771,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
                         recipient,
                         verifier,
                         deadline,
-                        _useNonce(claim)
+                        nonce
                     )
                 )
             );
