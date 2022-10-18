@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./Base64.sol";
-
+import "hardhat/console.sol";
 /**
  * This is the EcoNFT for verifying an arbitraty claim.
  */
@@ -64,7 +64,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
      */
     bytes32 private constant UNREGISTER_TYPEHASH =
         keccak256(
-            "unregister(string calldata claim,address recipient,address verifier,bytes calldata verifySig)"
+            "Unregister(string claim,address recipient,address verifier,uint256 deadline,uint256 nonce)"
         );
 
     /**

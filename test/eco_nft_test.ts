@@ -4,9 +4,8 @@ import { ethers } from "hardhat"
 import { EcoNFT, EcoTest } from "../typechain-types"
 import { deployEcoNFT, Meta } from "./utils/fixtures"
 import {
-  signRegistrationMessage,
   signRegistrationTypeMessage,
-  signUnregistrationMessage,
+  signUnregistrationTypeMessage,
 } from "./utils/sign"
 import { latestBlockTimestamp } from "./utils/time"
 
@@ -525,52 +524,187 @@ describe.only("EcoNFT tests", async function () {
   })
 
   describe("On unregistration", async function () {
-    // todo
-    // it("should fail on expired deadline", async function () {
-    //   const expiredDeadline = parseInt(await latestBlockTimestamp(), 16) -1000
-    //   const revocable = true
-    //   const [approvSig,verifySig] = await signRegistrationTypeMessage(claim, feeAmount, revocable, addr0, owner, expiredDeadline, nonce, chainID, ecoNft.address)
-
-    //   await expect(
-    //     ecoNft.register(
-    //       claim,
-    //       feeAmount,
-    //       revocable,
-    //       addr0.address,
-    //       owner.address,
-    //       expiredDeadline,
-    //       approvSig,
-    //       verifySig
-    //     )
-    //   ).to.be.revertedWith("DeadlineExpired()")
-    // })
-
     it("should revert if there is no verified claim", async function () {
-      const sig = await signUnregistrationMessage(claim, addr0, owner)
+      const sig = await signUnregistrationTypeMessage(
+        claim,
+        addr0,
+        owner,
+        deadline,
+        nonce,
+        chainID,
+        ecoNft.address
+      )
       await expect(
         ecoNft.unregister(claim, addr0.address, owner.address, deadline, sig)
       ).to.be.revertedWith("UnverifiedClaim()")
     })
 
+    it("should fail on expired deadline", async function () {
+      await registerClaim(
+        claim,
+        0,
+        true,
+        addr0,
+        owner,
+        deadline,
+        nonce,
+        chainID
+      )
+      // check nonce incremented
+      const firstNonce = (await ecoNft.nonces(claim)).toNumber()
+      expect(firstNonce).to.eq(nonce + 1)
+
+      const expiredDeadline = parseInt(await latestBlockTimestamp(), 16) - 1000
+      const sig = await signUnregistrationTypeMessage(
+        claim,
+        addr0,
+        owner,
+        expiredDeadline,
+        firstNonce,
+        chainID,
+        ecoNft.address
+      )
+
+      await expect(
+        ecoNft.unregister(
+          claim,
+          addr0.address,
+          owner.address,
+          expiredDeadline,
+          sig
+        )
+      ).to.be.revertedWith("DeadlineExpired()")
+    })
+
+    it("should fail on trying to use the same signature for a second consecutive unregistration", async function () {
+      await registerClaim(
+        claim,
+        0,
+        true,
+        addr0,
+        owner,
+        deadline,
+        nonce,
+        chainID
+      )
+      // check nonce incremented
+      const firstNonce = (await ecoNft.nonces(claim)).toNumber()
+      expect(firstNonce).to.eq(nonce + 1)
+      const sig = await signUnregistrationTypeMessage(
+        claim,
+        addr0,
+        owner,
+        deadline,
+        firstNonce,
+        chainID,
+        ecoNft.address
+      )
+
+      await expect(
+        ecoNft.unregister(claim, addr0.address, owner.address, deadline, sig)
+      )
+        .to.emit(ecoNft, "UnregisterClaim")
+        .withArgs(claim, addr0.address, owner.address)
+
+      const secondNonce = (await ecoNft.nonces(claim)).toNumber()
+      expect(secondNonce).to.eq(firstNonce + 1)
+
+      await registerClaim(
+        claim,
+        0,
+        true,
+        addr0,
+        owner,
+        deadline,
+        secondNonce,
+        chainID
+      )
+
+      // should fail on using sig with nonce outdated
+      await expect(
+        ecoNft.unregister(claim, addr0.address, owner.address, deadline, sig)
+      ).to.be.revertedWith("InvalidVerifierSignature()")
+    })
+
     it("should revert if the claim is unrevocable", async function () {
-      await registerClaim(claim, 0, false, addr0, owner)
-      const sig = await signUnregistrationMessage(claim, addr0, owner)
+      await registerClaim(
+        claim,
+        0,
+        false,
+        addr0,
+        owner,
+        deadline,
+        nonce,
+        chainID
+      )
+      // check nonce incremented
+      const firstNonce = (await ecoNft.nonces(claim)).toNumber()
+      expect(firstNonce).to.eq(nonce + 1)
+      const sig = await signUnregistrationTypeMessage(
+        claim,
+        addr0,
+        owner,
+        deadline,
+        firstNonce,
+        chainID,
+        ecoNft.address
+      )
       await expect(
         ecoNft.unregister(claim, addr0.address, owner.address, deadline, sig)
       ).to.be.revertedWith("UnrevocableClaim()")
     })
 
     it("should revert if the verifier signature is invalid", async function () {
-      await registerClaim(claim, 0, true, addr0, owner)
-      const sig = await signUnregistrationMessage(claim, addr0, addr0)
+      await registerClaim(
+        claim,
+        0,
+        true,
+        addr0,
+        owner,
+        deadline,
+        nonce,
+        chainID
+      )
+      // check nonce incremented
+      const firstNonce = (await ecoNft.nonces(claim)).toNumber()
+      expect(firstNonce).to.eq(nonce + 1)
+      const sig = await signUnregistrationTypeMessage(
+        claim,
+        addr0,
+        addr0,
+        deadline,
+        firstNonce,
+        chainID,
+        ecoNft.address
+      )
       await expect(
         ecoNft.unregister(claim, addr0.address, owner.address, deadline, sig)
       ).to.be.revertedWith("InvalidVerifierSignature()")
     })
 
     it("should succeed in removing a claim", async function () {
-      await registerClaim(claim, 0, true, addr0, owner)
-      const sig = await signUnregistrationMessage(claim, addr0, owner)
+      await registerClaim(
+        claim,
+        0,
+        true,
+        addr0,
+        owner,
+        deadline,
+        nonce,
+        chainID
+      )
+      // check nonce incremented
+      const firstNonce = (await ecoNft.nonces(claim)).toNumber()
+      expect(firstNonce).to.eq(nonce + 1)
+      const sig = await signUnregistrationTypeMessage(
+        claim,
+        addr0,
+        owner,
+        deadline,
+        firstNonce,
+        chainID,
+        ecoNft.address
+      )
 
       await expect(ecoNft.mintNFT(addr0.address, claim))
         .to.emit(ecoNft, "Mint")
@@ -610,24 +744,15 @@ describe.only("EcoNFT tests", async function () {
 
   describe("On NFT minting", async function () {
     beforeEach(async function () {
-      const [approvSig, verifySig] = await signRegistrationMessage(
+      await registerClaim(
         claim,
-        feeAmount,
+        0,
         false,
         addr0,
-        owner
-      )
-
-      await payFee(addr0, feeAmount)
-      await ecoNft.register(
-        claim,
-        feeAmount,
-        false,
-        addr0.address,
-        owner.address,
+        owner,
         deadline,
-        approvSig,
-        verifySig
+        nonce,
+        chainID
       )
     })
 
@@ -660,36 +785,22 @@ describe.only("EcoNFT tests", async function () {
     })
 
     it("should allow minting of multiple nfts for different verified claims", async function () {
-      const revocable = true
       await expect(ecoNft.mintNFT(addr0.address, claim))
         .to.emit(ecoNft, "Mint")
         .withArgs(addr0.address, claim, 1)
 
       // register new claim
       const claim2 = claim + "1"
-      const [approvSig, verifySig] = await signRegistrationMessage(
+      await registerClaim(
         claim2,
-        feeAmount,
-        revocable,
+        0,
+        false,
         addr0,
-        owner
+        owner,
+        deadline,
+        nonce,
+        chainID
       )
-
-      await payFee(addr0, feeAmount)
-      await expect(
-        ecoNft.register(
-          claim2,
-          feeAmount,
-          revocable,
-          addr0.address,
-          owner.address,
-          deadline,
-          approvSig,
-          verifySig
-        )
-      )
-        .to.emit(ecoNft, "RegisterClaim")
-        .withArgs(claim2, feeAmount, revocable, addr0.address, owner.address)
 
       await expect(ecoNft.mintNFT(addr0.address, claim2))
         .to.emit(ecoNft, "Mint")
@@ -704,40 +815,32 @@ describe.only("EcoNFT tests", async function () {
       ;[, , addr1] = await ethers.getSigners()
       await payFee(addr0, feeAmount * 2)
 
-      const [approvSig0, verifySig0] = await signRegistrationMessage(
+      await registerClaim(
         claim,
-        feeAmount,
+        0,
         false,
         addr0,
-        owner
+        owner,
+        deadline,
+        nonce,
+        chainID
       )
-      const [approvSig1, verifySig1] = await signRegistrationMessage(
+
+      // check nonce incremented
+      const firstNonce = (await ecoNft.nonces(claim)).toNumber()
+      expect(firstNonce).to.eq(nonce + 1)
+
+      await registerClaim(
         claim,
-        feeAmount,
+        0,
         true,
         addr0,
-        addr1
-      )
-      await ecoNft.register(
-        claim,
-        feeAmount,
-        false,
-        addr0.address,
-        owner.address,
+        addr1,
         deadline,
-        approvSig0,
-        verifySig0
+        firstNonce,
+        chainID
       )
-      await ecoNft.register(
-        claim,
-        feeAmount,
-        true,
-        addr0.address,
-        addr1.address,
-        deadline,
-        approvSig1,
-        verifySig1
-      )
+
       await expect(ecoNft.mintNFT(addr0.address, claim))
     })
 
@@ -811,27 +914,44 @@ describe.only("EcoNFT tests", async function () {
     feeAmount: number,
     revocable: boolean,
     recipient: SignerWithAddress,
-    verifier: SignerWithAddress
+    verifier: SignerWithAddress,
+    deadline: number,
+    nonce: number,
+    chainID: number
   ) {
-    const [approvSig, verifySig] = await signRegistrationMessage(
+    const [approvSig, verifySig] = await signRegistrationTypeMessage(
       claim,
       feeAmount,
       revocable,
       recipient,
-      verifier
+      verifier,
+      deadline,
+      nonce,
+      chainID,
+      ecoNft.address
     )
 
     await payFee(addr0, feeAmount)
-    await ecoNft.register(
-      claim,
-      feeAmount,
-      revocable,
-      recipient.address,
-      verifier.address,
-      deadline,
-      approvSig,
-      verifySig
+    await expect(
+      ecoNft.register(
+        claim,
+        feeAmount,
+        revocable,
+        recipient.address,
+        verifier.address,
+        deadline,
+        approvSig,
+        verifySig
+      )
     )
+      .to.emit(ecoNft, "RegisterClaim")
+      .withArgs(
+        claim,
+        feeAmount,
+        revocable,
+        recipient.address,
+        verifier.address
+      )
   }
 
   /**
