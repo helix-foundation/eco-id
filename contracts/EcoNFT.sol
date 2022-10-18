@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./Base64.sol";
-
+import "hardhat/console.sol";
 /**
  * This is the EcoNFT for verifying an arbitraty claim.
  */
@@ -237,6 +237,8 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
         bytes calldata approveSig,
         bytes calldata verifySig
     ) external _validClaim(claim) {
+        console.log(block.chainid);
+        console.log("start verification");
         if (
             !_verifyRegistrationApprove(
                 claim,
@@ -250,6 +252,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
         ) {
             revert InvalidRegistrationApproveSignature();
         }
+        console.log("Verified!");
         if (
             !_verifyRegistrationVerify(
                 claim,
@@ -654,9 +657,9 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
         return
             _hashTypedDataV4(
                 keccak256(
-                    abi.encodePacked(
+                    abi.encode(
                         REGISTER_TYPEHASH,
-                        claim,
+                        keccak256(bytes(claim)),
                         feeAmount,
                         revocable,
                         recipient,
@@ -689,9 +692,9 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
         return
             _hashTypedDataV4(
                 keccak256(
-                    abi.encodePacked(
+                    abi.encode(
                         REGISTER_TYPEHASH,
-                        claim,
+                        keccak256(bytes(claim)),
                         feeAmount,
                         revocable,
                         recipient,
@@ -720,9 +723,9 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
         return
             _hashTypedDataV4(
                 keccak256(
-                    abi.encodePacked(
+                    abi.encode(
                         UNREGISTER_TYPEHASH,
-                        claim,
+                        keccak256(bytes(claim)),
                         recipient,
                         verifier,
                         deadline,

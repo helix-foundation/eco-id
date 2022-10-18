@@ -28,11 +28,23 @@ describe.only("EcoNFT tests", async function () {
   beforeEach(async function () {
     ;[owner, addr0] = await ethers.getSigners()
       ;[eco, ecoNft] = await deployEcoNFT()
-    deadline = await latestBlockTimestamp() + 10000
+    deadline =  10000
     chainID = (await ethers.provider.getNetwork()).chainId
     nonce = (await ecoNft.nonces(claim)).toNumber()
   })
   describe("On nft transfer", async function () {
+    it('returns proper domain separator', async () => {
+      const domain = {
+        name: "EcoNFT",
+        version: '1',
+        chainId: chainID,
+        verifyingContract: ecoNft.address,
+      }
+      const expectedDomainSeparator =
+        ethers.utils._TypedDataEncoder.hashDomain(domain)
+      expect(await ecoNft.DOMAIN_SEPARATOR()).to.equal(expectedDomainSeparator)
+    })
+
     it.only("should not allow the transfer of nft's", async function () {
       const revocable = false
       // const [approvSig, verifySig] = await signRegistrationMessage(
