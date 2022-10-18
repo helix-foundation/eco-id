@@ -80,7 +80,7 @@ describe("EcoNFT tests", async function () {
           approvSig,
           verifySig
         )
-      ).to.be.revertedWith("invalid empty claim")
+      ).to.be.revertedWith("EmptyClaim()")
     })
 
     it("should fail an invalid approval signature", async function () {
@@ -101,7 +101,7 @@ describe("EcoNFT tests", async function () {
           verifySig,
           verifySig
         )
-      ).to.be.revertedWith("invalid recipient signature")
+      ).to.be.revertedWith("InvalidRegistrationApproveSignature()")
     })
 
     it("should fail an invalid verify signature", async function () {
@@ -131,7 +131,7 @@ describe("EcoNFT tests", async function () {
           approvSig,
           verifySig
         )
-      ).to.be.revertedWith("invalid verifier signature")
+      ).to.be.revertedWith("InvalidRegistrationVerifierSignature()")
     })
 
     it("should fail on a fee amount difference", async function () {
@@ -161,7 +161,7 @@ describe("EcoNFT tests", async function () {
           approvSig,
           verifySig
         )
-      ).to.be.revertedWith("invalid verifier signature")
+      ).to.be.revertedWith("InvalidRegistrationVerifierSignature()")
     })
 
     it("should fail on payment transfer failure", async function () {
@@ -186,10 +186,11 @@ describe("EcoNFT tests", async function () {
     })
 
     it("should register and emit on valid registration", async function () {
+      const revocable = true
       const [approvSig, verifySig] = await signRegistrationMessage(
         claim,
         feeAmount,
-        true,
+        revocable,
         addr0,
         owner
       )
@@ -199,7 +200,7 @@ describe("EcoNFT tests", async function () {
         ecoNft.register(
           claim,
           feeAmount,
-          true,
+          revocable,
           addr0.address,
           owner.address,
           approvSig,
@@ -207,7 +208,7 @@ describe("EcoNFT tests", async function () {
         )
       )
         .to.emit(ecoNft, "RegisterClaim")
-        .withArgs(claim, feeAmount, addr0.address, owner.address)
+        .withArgs(claim, feeAmount, revocable, addr0.address, owner.address)
     })
 
     it("should fail when the same verifier attempts to verify the same claim twice", async function () {
@@ -240,22 +241,23 @@ describe("EcoNFT tests", async function () {
           approvSig,
           verifySig
         )
-      ).to.be.revertedWith("duplicate varifier")
+      ).to.be.revertedWith(`DuplicateVerifier("${owner.address}")`)
     })
 
     it("should allow multiple verifiers to verify the same claim", async function () {
+      const revocable = true
       const [, , addr1] = await ethers.getSigners()
       const [approvSig1, verifySig1] = await signRegistrationMessage(
         claim,
         feeAmount,
-        true,
+        revocable,
         addr0,
         owner
       )
       const [approvSig2, verifySig2] = await signRegistrationMessage(
         claim,
         feeAmount,
-        true,
+        revocable,
         addr0,
         addr1
       )
@@ -264,7 +266,7 @@ describe("EcoNFT tests", async function () {
         ecoNft.register(
           claim,
           feeAmount,
-          true,
+          revocable,
           addr0.address,
           owner.address,
           approvSig1,
@@ -272,13 +274,13 @@ describe("EcoNFT tests", async function () {
         )
       )
         .to.emit(ecoNft, "RegisterClaim")
-        .withArgs(claim, feeAmount, addr0.address, owner.address)
+        .withArgs(claim, feeAmount, revocable, addr0.address, owner.address)
 
       await expect(
         ecoNft.register(
           claim,
           feeAmount,
-          true,
+          revocable,
           addr0.address,
           addr1.address,
           approvSig2,
@@ -286,7 +288,7 @@ describe("EcoNFT tests", async function () {
         )
       )
         .to.emit(ecoNft, "RegisterClaim")
-        .withArgs(claim, feeAmount, addr0.address, addr1.address)
+        .withArgs(claim, feeAmount, revocable, addr0.address, addr1.address)
     })
   })
 
@@ -295,7 +297,7 @@ describe("EcoNFT tests", async function () {
       const sig = await signUnregistrationMessage(claim, addr0, owner)
       await expect(
         ecoNft.unregister(claim, addr0.address, owner.address, sig)
-      ).to.be.revertedWith("claim not verified")
+      ).to.be.revertedWith("UnverifiedClaim()")
     })
 
     it("should revert if the claim is unrevocable", async function () {
@@ -303,7 +305,7 @@ describe("EcoNFT tests", async function () {
       const sig = await signUnregistrationMessage(claim, addr0, owner)
       await expect(
         ecoNft.unregister(claim, addr0.address, owner.address, sig)
-      ).to.be.revertedWith("claim unrevocable")
+      ).to.be.revertedWith("UnrevocableClaim()")
     })
 
     it("should revert if the verifier signature is invalid", async function () {
@@ -311,7 +313,7 @@ describe("EcoNFT tests", async function () {
       const sig = await signUnregistrationMessage(claim, addr0, addr0)
       await expect(
         ecoNft.unregister(claim, addr0.address, owner.address, sig)
-      ).to.be.revertedWith("invalid verifier signature")
+      ).to.be.revertedWith("InvalidVerifierSignature()")
     })
 
     it("should succeed in removing a claim", async function () {
@@ -375,10 +377,10 @@ describe("EcoNFT tests", async function () {
       // wrong claim
       await expect(
         ecoNft.mintNFT(addr0.address, claim + "1")
-      ).to.be.revertedWith("nft claim non-existant")
+      ).to.be.revertedWith("UnverifiedClaim()")
       // wrong address
       await expect(ecoNft.mintNFT(owner.address, claim)).to.be.revertedWith(
-        "nft claim non-existant"
+        "UnverifiedClaim()"
       )
     })
 
@@ -389,16 +391,18 @@ describe("EcoNFT tests", async function () {
     })
 
     it("should revert nft has already been minted for claim", async function () {
+      const tokenID = 1
       await expect(ecoNft.mintNFT(addr0.address, claim))
         .to.emit(ecoNft, "Mint")
-        .withArgs(addr0.address, claim, 1)
+        .withArgs(addr0.address, claim, tokenID)
 
       await expect(ecoNft.mintNFT(addr0.address, claim)).to.be.revertedWith(
-        "token already minted for claim"
+        `NftAlreadyMinted(${tokenID})`
       )
     })
 
     it("should allow minting of multiple nfts for different verified claims", async function () {
+      const revocable = true
       await expect(ecoNft.mintNFT(addr0.address, claim))
         .to.emit(ecoNft, "Mint")
         .withArgs(addr0.address, claim, 1)
@@ -408,7 +412,7 @@ describe("EcoNFT tests", async function () {
       const [approvSig, verifySig] = await signRegistrationMessage(
         claim2,
         feeAmount,
-        true,
+        revocable,
         addr0,
         owner
       )
@@ -418,7 +422,7 @@ describe("EcoNFT tests", async function () {
         ecoNft.register(
           claim2,
           feeAmount,
-          true,
+          revocable,
           addr0.address,
           owner.address,
           approvSig,
@@ -426,7 +430,7 @@ describe("EcoNFT tests", async function () {
         )
       )
         .to.emit(ecoNft, "RegisterClaim")
-        .withArgs(claim2, feeAmount, addr0.address, owner.address)
+        .withArgs(claim2, feeAmount, revocable, addr0.address, owner.address)
 
       await expect(ecoNft.mintNFT(addr0.address, claim2))
         .to.emit(ecoNft, "Mint")
@@ -477,7 +481,7 @@ describe("EcoNFT tests", async function () {
     })
 
     it("should revert on metadata for non-existant token", async function () {
-      await expect(ecoNft.tokenURI(10)).to.be.revertedWith("non-existent token")
+      await expect(ecoNft.tokenURI(10)).to.be.revertedWith("NonExistantToken()")
     })
 
     it("should dispay the verifier of a claim", async function () {
@@ -574,7 +578,10 @@ describe("EcoNFT tests", async function () {
   async function getMeta(
     metaEncoded: string
   ): Promise<[Meta, NftAttribute, NftAttribute[]]> {
-    const meta: Meta = JSON.parse(atob(metaEncoded.split(",")[1]))
+    const encodedMeta = metaEncoded.split(",")[1]
+    const decodedMeta = Buffer.from(encodedMeta, "base64").toString("utf-8")
+    const meta: Meta = JSON.parse(decodedMeta)
+
     // @ts-ignore
     const dataAttr: NftAttribute = meta.attributes[0]
     // @ts-ignore
