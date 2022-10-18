@@ -30,7 +30,7 @@ const config: HardhatUserConfig = {
         enabled: true,
         runs: 1000,
       },
-      viaIR: true
+      viaIR: true,
     },
   },
   networks: {

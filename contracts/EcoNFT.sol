@@ -7,7 +7,6 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./Base64.sol";
-import "hardhat/console.sol";
 
 /**
  * This is the EcoNFT for verifying an arbitraty claim.
@@ -97,6 +96,11 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
      * Event for when an EcoNFT is minted
      */
     event Mint(address indexed recipient, string claim, uint256 tokenID);
+
+    /**
+     * Error for when the deadline for a signature has passed
+     */
+    error DeadlineExpired();
 
     /**
      * Error for when the approval signature during registration is invalid
@@ -250,8 +254,9 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
         bytes calldata approveSig,
         bytes calldata verifySig
     ) external _validClaim(claim) {
-        console.log(block.chainid);
-        console.log("start verification");
+        if(deadline < block.timestamp){
+            revert DeadlineExpired();
+        }
         uint256 nonce = _useNonce(claim);
         if (
             !_verifyRegistrationApprove(
@@ -267,7 +272,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
         ) {
             revert InvalidRegistrationApproveSignature();
         }
-        console.log("Verified!");
+
         if (
             !_verifyRegistrationVerify(
                 claim,
@@ -316,6 +321,9 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
         uint256 deadline,
         bytes calldata verifySig
     ) external _validClaim(claim) {
+        if(deadline < block.timestamp){
+            revert DeadlineExpired();
+        }
         VerifiedClaim storage vclaim = _verifiedClaims[recipient][claim];
         if (!vclaim.verifierMap[verifier]) {
             revert UnverifiedClaim();
@@ -711,7 +719,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
                 )
             );
     }
-    
+
     /**
      * Hashes the input parameters for the registration signature verification
      *
