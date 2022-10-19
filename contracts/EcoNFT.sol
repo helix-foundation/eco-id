@@ -226,15 +226,15 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
      * Check if the claim has been verified by the given verifier for the given address
      *
      * @param recipient the address of the associated claim
-     * @param verifier the address of the verifier for the claim on the recipient address
      * @param claim the claim that should be verified
+     * @param verifier the address of the verifier for the claim on the recipient address
      *
      * @return true if the claim is verified, false otherwise
      */
     function isClaimVerified(
         address recipient,
-        address verifier,
-        string calldata claim
+        string calldata claim,
+        address verifier
     ) external view returns (bool) {
         return _verifiedClaims[recipient][claim].verifierMap[verifier];
     }
