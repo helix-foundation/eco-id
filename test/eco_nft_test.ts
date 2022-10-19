@@ -13,7 +13,7 @@ import { latestBlockTimestamp } from "./utils/time"
  * Tests that the EcoNFT contract performs correctly on minting of nft's
  * Note, check encryption https://dev.to/rounakbanik/tutorial-digital-signatures-nft-allowlists-eeb
  */
-describe.only("EcoNFT tests", async function () {
+describe("EcoNFT tests", async function () {
   const claim = "discord:21306324"
   let owner: SignerWithAddress, addr0: SignerWithAddress
   let eco: EcoTest

@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./Base64.sol";
-import "hardhat/console.sol";
+
 /**
  * This is the EcoNFT for verifying an arbitraty claim.
  */
@@ -50,7 +50,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
         keccak256(
             "Register(string claim,uint256 feeAmount,bool revocable,address recipient,address verifier,uint256 deadline,uint256 nonce)"
         );
-    
+
     /**
      * The hash of the register function signature for the verifier
      */
@@ -254,7 +254,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
         bytes calldata approveSig,
         bytes calldata verifySig
     ) external _validClaim(claim) {
-        if(deadline < block.timestamp){
+        if (deadline < block.timestamp) {
             revert DeadlineExpired();
         }
         uint256 nonce = _useNonce(claim);
@@ -321,7 +321,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
         uint256 deadline,
         bytes calldata verifySig
     ) external _validClaim(claim) {
-        if(deadline < block.timestamp){
+        if (deadline < block.timestamp) {
             revert DeadlineExpired();
         }
         VerifiedClaim storage vclaim = _verifiedClaims[recipient][claim];
