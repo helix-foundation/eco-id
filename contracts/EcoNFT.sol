@@ -40,6 +40,12 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
         "https://ipfs.io/ipfs/QmWZFvb88KDos7BYyf52btxPuEEifZN7i5CA2YfC3azS8J";
 
     /**
+     * The static url for contract-level metadata
+     */
+    string public constant CONTRACT_LEVEL_METADATA_URL =
+        "need-link";
+
+    /**
      * The default pagination limit for the tokenURI meta that reads from the claim verifiers array
      */
     uint256 public constant META_LIMIT = 50;
@@ -867,5 +873,13 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
         Counters.Counter storage nonce = _nonces[claim];
         current = nonce.current();
         nonce.increment();
+
+    /**
+     * Function for reading NFT-level metadata
+     *
+     * Designed to match the OpenSea specification
+     */
+    function contractURI() public view returns (string memory) {
+        return CONTRACT_LEVEL_METADATA_URL;
     }
 }
