@@ -31,13 +31,19 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
      * The static description for the nft
      */
     string public constant NFT_DESCRIPTION =
-        "Eco IDs are fully decentralized and permissionless identity primitives designed to be simple, versatile and immutable. They are intended to serve as a basic foundation to bootstrap increasingly-complex and custom reputation and governance systems.\\nEco IDs are ERC-721 NFTs that hold arbitrary data attested to by a verifier, along with the identity of the verifier. Consumers of the data in the system can choose which verifiers to listen to and what data to look for. End users request attestations from verifiers, and once granted, are able to mint a new Eco ID with that data.\\nThe system allows for both revocable and non-revocable attestations by verifiers. It also allows verifiers the option to charge a fee in $ECO for the minting of the Eco ID.\\nIdentity and reputation are built up by combining many individual data points, with optionality for others to selectively pay attention to certain ones. Eco IDs allow for the accumulation of such data points, and in doing so, provide a path to more robust on-chain identity and reputation.";
+        "Eco IDs are fully decentralized and permissionless identity primitives designed to be simple, versatile and immutable. They are intended to serve as a basic foundation to bootstrap increasingly-complex and custom reputation and governance systems.";
 
     /**
      * The static image url for all the nft's
      */
     string public constant NFT_IMAGE_URL =
         "https://ipfs.io/ipfs/QmWZFvb88KDos7BYyf52btxPuEEifZN7i5CA2YfC3azS8J";
+
+    /**
+     * The static url for contract-level metadata
+     */
+    string public constant CONTRACT_LEVEL_METADATA_URL =
+        "https://ipfs.io/ipfs/QmZ7vpY34jdmDyn8otBMzvX7omn6NWTfdxVFr8RMuAAVPZ";
 
     /**
      * The default pagination limit for the tokenURI meta that reads from the claim verifiers array
@@ -867,5 +873,14 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
         Counters.Counter storage nonce = _nonces[claim];
         current = nonce.current();
         nonce.increment();
+    }
+
+    /**
+     * Function for reading NFT-level metadata
+     *
+     * Designed to match the OpenSea specification
+     */
+    function contractURI() public pure returns (string memory) {
+        return CONTRACT_LEVEL_METADATA_URL;
     }
 }
