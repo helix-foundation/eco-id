@@ -1,8 +1,8 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
 import { ethers } from "hardhat"
-import { EcoNFT, EcoTest } from "../typechain-types"
-import { deployEcoNFT, Meta } from "./utils/fixtures"
+import { EcoID, EcoTest } from "../typechain-types"
+import { deployEcoID, Meta } from "./utils/fixtures"
 import {
   signRegistrationTypeMessage,
   signUnregistrationTypeMessage,
@@ -10,16 +10,15 @@ import {
 import { latestBlockTimestamp } from "./utils/time"
 
 /**
- * Tests that the EcoNFT contract performs correctly on minting of nft's
- * Note, check encryption https://dev.to/rounakbanik/tutorial-digital-signatures-nft-allowlists-eeb
+ * Tests that the EcoID contract performs correctly on registration and minting of nft's
  */
-describe("EcoNFT tests", async function () {
+describe("EcoID tests", async function () {
   const description =
-    "Eco IDs are fully decentralized and permissionless identity primitives designed to be simple, versatile and immutable. They are intended to serve as a basic foundation to bootstrap increasingly-complex and custom reputation and governance systems.\nEco IDs are ERC-721 NFTs that hold arbitrary data attested to by a verifier, along with the identity of the verifier. Consumers of the data in the system can choose which verifiers to listen to and what data to look for. End users request attestations from verifiers, and once granted, are able to mint a new Eco ID with that data.\nThe system allows for both revocable and non-revocable attestations by verifiers. It also allows verifiers the option to charge a fee in $ECO for the minting of the Eco ID.\nIdentity and reputation are built up by combining many individual data points, with optionality for others to selectively pay attention to certain ones. Eco IDs allow for the accumulation of such data points, and in doing so, provide a path to more robust on-chain identity and reputation."
+    "Eco IDs are fully decentralized and permissionless identity primitives designed to be simple, versatile and immutable. They are intended to serve as a basic foundation to bootstrap increasingly-complex and custom reputation and governance systems."
   const claim = "discord:21306324"
   let owner: SignerWithAddress, addr0: SignerWithAddress
   let eco: EcoTest
-  let ecoNft: EcoNFT
+  let ecoID: EcoID
   const feeAmount = 1000
   let deadline: number, chainID: number, nonce: number
 
@@ -27,22 +26,22 @@ describe("EcoNFT tests", async function () {
 
   beforeEach(async function () {
     ;[owner, addr0] = await ethers.getSigners()
-    ;[eco, ecoNft] = await deployEcoNFT()
+    ;[eco, ecoID] = await deployEcoID()
     deadline = parseInt(await latestBlockTimestamp(), 16) + 10000
     chainID = (await ethers.provider.getNetwork()).chainId
-    nonce = (await ecoNft.nonces(claim)).toNumber()
+    nonce = (await ecoID.nonces(claim)).toNumber()
   })
-  describe("On nft transfer", async function () {
+  describe("On ecoID transfer", async function () {
     it("returns proper domain separator", async () => {
       const domain = {
-        name: "EcoNFT",
+        name: "EcoID",
         version: "1",
         chainId: chainID,
-        verifyingContract: ecoNft.address,
+        verifyingContract: ecoID.address,
       }
       const expectedDomainSeparator =
         ethers.utils._TypedDataEncoder.hashDomain(domain)
-      expect(await ecoNft.DOMAIN_SEPARATOR()).to.equal(expectedDomainSeparator)
+      expect(await ecoID.DOMAIN_SEPARATOR()).to.equal(expectedDomainSeparator)
     })
 
     it("should not allow the transfer of nft's", async function () {
@@ -57,11 +56,11 @@ describe("EcoNFT tests", async function () {
         deadline,
         nonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
       await payFee(addr0, feeAmount)
 
-      await ecoNft.register(
+      await ecoID.register(
         claim,
         feeAmount,
         revocable,
@@ -73,12 +72,12 @@ describe("EcoNFT tests", async function () {
       )
 
       const tokenID = 1
-      await expect(ecoNft.mintNFT(addr0.address, claim))
-        .to.emit(ecoNft, "Mint")
+      await expect(ecoID.mintNFT(addr0.address, claim))
+        .to.emit(ecoID, "Mint")
         .withArgs(addr0.address, claim, tokenID)
 
       await expect(
-        ecoNft.transferFrom(addr0.address, owner.address, tokenID)
+        ecoID.transferFrom(addr0.address, owner.address, tokenID)
       ).to.be.revertedWith("ERC721: caller is not token owner nor approved")
     })
   })
@@ -96,11 +95,11 @@ describe("EcoNFT tests", async function () {
         expiredDeadline,
         nonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
 
       await expect(
-        ecoNft.register(
+        ecoID.register(
           claim,
           feeAmount,
           revocable,
@@ -124,11 +123,11 @@ describe("EcoNFT tests", async function () {
         deadline,
         nonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
 
       await expect(
-        ecoNft.register(
+        ecoID.register(
           "",
           feeAmount,
           revocable,
@@ -152,10 +151,10 @@ describe("EcoNFT tests", async function () {
         deadline,
         nonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
       await expect(
-        ecoNft.register(
+        ecoID.register(
           claim,
           feeAmount,
           revocable,
@@ -179,7 +178,7 @@ describe("EcoNFT tests", async function () {
         deadline,
         nonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
 
       const [, verifySig] = await signRegistrationTypeMessage(
@@ -191,11 +190,11 @@ describe("EcoNFT tests", async function () {
         deadline,
         nonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
 
       await expect(
-        ecoNft.register(
+        ecoID.register(
           claim,
           feeAmount,
           revocable,
@@ -219,7 +218,7 @@ describe("EcoNFT tests", async function () {
         deadline,
         nonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
 
       const [, verifySig] = await signRegistrationTypeMessage(
@@ -231,11 +230,11 @@ describe("EcoNFT tests", async function () {
         deadline,
         nonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
 
       await expect(
-        ecoNft.register(
+        ecoID.register(
           claim,
           feeAmount,
           revocable,
@@ -259,7 +258,7 @@ describe("EcoNFT tests", async function () {
         deadline,
         nonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
 
       const [, verifySig] = await signRegistrationTypeMessage(
@@ -271,11 +270,11 @@ describe("EcoNFT tests", async function () {
         deadline,
         nonce + 1,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
 
       await expect(
-        ecoNft.register(
+        ecoID.register(
           claim,
           feeAmount,
           revocable,
@@ -299,11 +298,11 @@ describe("EcoNFT tests", async function () {
         deadline,
         nonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
 
       await expect(
-        ecoNft.register(
+        ecoID.register(
           claim,
           feeAmount,
           revocable,
@@ -327,12 +326,12 @@ describe("EcoNFT tests", async function () {
         deadline,
         nonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
 
       await payFee(addr0, feeAmount)
       await expect(
-        ecoNft.register(
+        ecoID.register(
           claim,
           feeAmount,
           revocable,
@@ -343,7 +342,7 @@ describe("EcoNFT tests", async function () {
           verifySig
         )
       )
-        .to.emit(ecoNft, "RegisterClaim")
+        .to.emit(ecoID, "RegisterClaim")
         .withArgs(claim, feeAmount, revocable, addr0.address, owner.address)
     })
 
@@ -358,12 +357,12 @@ describe("EcoNFT tests", async function () {
         deadline,
         nonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
 
       await payFee(addr0, feeAmount)
       await expect(
-        ecoNft.register(
+        ecoID.register(
           claim,
           feeAmount,
           revocable,
@@ -374,16 +373,16 @@ describe("EcoNFT tests", async function () {
           verifySig
         )
       )
-        .to.emit(ecoNft, "RegisterClaim")
+        .to.emit(ecoID, "RegisterClaim")
         .withArgs(claim, feeAmount, revocable, addr0.address, owner.address)
 
       // check nonce incremented
-      const firstNonce = (await ecoNft.nonces(claim)).toNumber()
+      const firstNonce = (await ecoID.nonces(claim)).toNumber()
       expect(firstNonce).to.eq(nonce + 1)
 
       await payFee(addr0, feeAmount)
       await expect(
-        ecoNft.register(
+        ecoID.register(
           claim,
           feeAmount,
           revocable,
@@ -396,7 +395,7 @@ describe("EcoNFT tests", async function () {
       ).to.be.revertedWith("InvalidRegistrationApproveSignature()")
 
       // check nonce is the same
-      const secondNonce = (await ecoNft.nonces(claim)).toNumber()
+      const secondNonce = (await ecoID.nonces(claim)).toNumber()
       expect(secondNonce).to.eq(firstNonce)
     })
 
@@ -411,11 +410,11 @@ describe("EcoNFT tests", async function () {
         deadline,
         nonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
 
       await payFee(addr0, feeAmount)
-      await ecoNft.register(
+      await ecoID.register(
         claim,
         feeAmount,
         revocable,
@@ -426,7 +425,7 @@ describe("EcoNFT tests", async function () {
         verifySig1
       )
       // check nonce incremented
-      const firstNonce = (await ecoNft.nonces(claim)).toNumber()
+      const firstNonce = (await ecoID.nonces(claim)).toNumber()
       expect(firstNonce).to.eq(nonce + 1)
 
       const [approvSig2, verifySig2] = await signRegistrationTypeMessage(
@@ -438,11 +437,11 @@ describe("EcoNFT tests", async function () {
         deadline,
         firstNonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
 
       await expect(
-        ecoNft.register(
+        ecoID.register(
           claim,
           feeAmount,
           revocable,
@@ -455,7 +454,7 @@ describe("EcoNFT tests", async function () {
       ).to.be.revertedWith(`DuplicateVerifier("${owner.address}")`)
 
       // check nonce is the same
-      const secondNonce = (await ecoNft.nonces(claim)).toNumber()
+      const secondNonce = (await ecoID.nonces(claim)).toNumber()
       expect(secondNonce).to.eq(firstNonce)
     })
 
@@ -471,12 +470,12 @@ describe("EcoNFT tests", async function () {
         deadline,
         nonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
 
       await payFee(addr0, feeAmount * 2)
       await expect(
-        ecoNft.register(
+        ecoID.register(
           claim,
           feeAmount,
           revocable,
@@ -487,11 +486,11 @@ describe("EcoNFT tests", async function () {
           verifySig1
         )
       )
-        .to.emit(ecoNft, "RegisterClaim")
+        .to.emit(ecoID, "RegisterClaim")
         .withArgs(claim, feeAmount, revocable, addr0.address, owner.address)
 
       // check nonce incremented
-      const firstNonce = (await ecoNft.nonces(claim)).toNumber()
+      const firstNonce = (await ecoID.nonces(claim)).toNumber()
       expect(firstNonce).to.eq(nonce + 1)
       const [approvSig2, verifySig2] = await signRegistrationTypeMessage(
         claim,
@@ -502,10 +501,10 @@ describe("EcoNFT tests", async function () {
         deadline,
         firstNonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
       await expect(
-        ecoNft.register(
+        ecoID.register(
           claim,
           feeAmount,
           revocable,
@@ -516,11 +515,11 @@ describe("EcoNFT tests", async function () {
           verifySig2
         )
       )
-        .to.emit(ecoNft, "RegisterClaim")
+        .to.emit(ecoID, "RegisterClaim")
         .withArgs(claim, feeAmount, revocable, addr0.address, addr1.address)
 
       // check nonce incremented
-      const secondNonce = (await ecoNft.nonces(claim)).toNumber()
+      const secondNonce = (await ecoID.nonces(claim)).toNumber()
       expect(secondNonce).to.eq(firstNonce + 1)
     })
   })
@@ -534,10 +533,10 @@ describe("EcoNFT tests", async function () {
         deadline,
         nonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
       await expect(
-        ecoNft.unregister(claim, addr0.address, owner.address, deadline, sig)
+        ecoID.unregister(claim, addr0.address, owner.address, deadline, sig)
       ).to.be.revertedWith("UnverifiedClaim()")
     })
 
@@ -553,7 +552,7 @@ describe("EcoNFT tests", async function () {
         chainID
       )
       // check nonce incremented
-      const firstNonce = (await ecoNft.nonces(claim)).toNumber()
+      const firstNonce = (await ecoID.nonces(claim)).toNumber()
       expect(firstNonce).to.eq(nonce + 1)
 
       const expiredDeadline = parseInt(await latestBlockTimestamp(), 16) - 1000
@@ -564,11 +563,11 @@ describe("EcoNFT tests", async function () {
         expiredDeadline,
         firstNonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
 
       await expect(
-        ecoNft.unregister(
+        ecoID.unregister(
           claim,
           addr0.address,
           owner.address,
@@ -590,7 +589,7 @@ describe("EcoNFT tests", async function () {
         chainID
       )
       // check nonce incremented
-      const firstNonce = (await ecoNft.nonces(claim)).toNumber()
+      const firstNonce = (await ecoID.nonces(claim)).toNumber()
       expect(firstNonce).to.eq(nonce + 1)
       const sig = await signUnregistrationTypeMessage(
         claim,
@@ -599,16 +598,16 @@ describe("EcoNFT tests", async function () {
         deadline,
         firstNonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
 
       await expect(
-        ecoNft.unregister(claim, addr0.address, owner.address, deadline, sig)
+        ecoID.unregister(claim, addr0.address, owner.address, deadline, sig)
       )
-        .to.emit(ecoNft, "UnregisterClaim")
+        .to.emit(ecoID, "UnregisterClaim")
         .withArgs(claim, addr0.address, owner.address)
 
-      const secondNonce = (await ecoNft.nonces(claim)).toNumber()
+      const secondNonce = (await ecoID.nonces(claim)).toNumber()
       expect(secondNonce).to.eq(firstNonce + 1)
 
       await registerClaim(
@@ -624,7 +623,7 @@ describe("EcoNFT tests", async function () {
 
       // should fail on using sig with nonce outdated
       await expect(
-        ecoNft.unregister(claim, addr0.address, owner.address, deadline, sig)
+        ecoID.unregister(claim, addr0.address, owner.address, deadline, sig)
       ).to.be.revertedWith("InvalidVerifierSignature()")
     })
 
@@ -640,7 +639,7 @@ describe("EcoNFT tests", async function () {
         chainID
       )
       // check nonce incremented
-      const firstNonce = (await ecoNft.nonces(claim)).toNumber()
+      const firstNonce = (await ecoID.nonces(claim)).toNumber()
       expect(firstNonce).to.eq(nonce + 1)
       const sig = await signUnregistrationTypeMessage(
         claim,
@@ -649,10 +648,10 @@ describe("EcoNFT tests", async function () {
         deadline,
         firstNonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
       await expect(
-        ecoNft.unregister(claim, addr0.address, owner.address, deadline, sig)
+        ecoID.unregister(claim, addr0.address, owner.address, deadline, sig)
       ).to.be.revertedWith("UnrevocableClaim()")
     })
 
@@ -668,7 +667,7 @@ describe("EcoNFT tests", async function () {
         chainID
       )
       // check nonce incremented
-      const firstNonce = (await ecoNft.nonces(claim)).toNumber()
+      const firstNonce = (await ecoID.nonces(claim)).toNumber()
       expect(firstNonce).to.eq(nonce + 1)
       const sig = await signUnregistrationTypeMessage(
         claim,
@@ -677,10 +676,10 @@ describe("EcoNFT tests", async function () {
         deadline,
         firstNonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
       await expect(
-        ecoNft.unregister(claim, addr0.address, owner.address, deadline, sig)
+        ecoID.unregister(claim, addr0.address, owner.address, deadline, sig)
       ).to.be.revertedWith("InvalidVerifierSignature()")
     })
 
@@ -696,7 +695,7 @@ describe("EcoNFT tests", async function () {
         chainID
       )
       // check nonce incremented
-      const firstNonce = (await ecoNft.nonces(claim)).toNumber()
+      const firstNonce = (await ecoID.nonces(claim)).toNumber()
       expect(firstNonce).to.eq(nonce + 1)
       const sig = await signUnregistrationTypeMessage(
         claim,
@@ -705,15 +704,15 @@ describe("EcoNFT tests", async function () {
         deadline,
         firstNonce,
         chainID,
-        ecoNft.address
+        ecoID.address
       )
 
-      await expect(ecoNft.mintNFT(addr0.address, claim))
-        .to.emit(ecoNft, "Mint")
+      await expect(ecoID.mintNFT(addr0.address, claim))
+        .to.emit(ecoID, "Mint")
         .withArgs(addr0.address, claim, 1)
 
       const [meta, dataAttr, verifierAttrs] = await getMeta(
-        await ecoNft.tokenURI(1)
+        await ecoID.tokenURI(1)
       )
 
       expect(meta.name).to.equal("Eco ID - discord:21...")
@@ -724,14 +723,14 @@ describe("EcoNFT tests", async function () {
       expect(verifierAttrs[0].value).to.equal(owner.address.toLocaleLowerCase())
 
       await expect(
-        ecoNft.unregister(claim, addr0.address, owner.address, deadline, sig)
+        ecoID.unregister(claim, addr0.address, owner.address, deadline, sig)
       )
-        .to.emit(ecoNft, "UnregisterClaim")
+        .to.emit(ecoID, "UnregisterClaim")
         .withArgs(claim, addr0.address, owner.address)
 
       // check nft is now without verifier
       const [meta1, dataAttr1, verifierAttrs1] = await getMeta(
-        await ecoNft.tokenURI(1)
+        await ecoID.tokenURI(1)
       )
 
       expect(meta1.name).to.equal("Eco ID - discord:21...")
@@ -758,34 +757,34 @@ describe("EcoNFT tests", async function () {
     it("should revert if there is no verified claim", async function () {
       // wrong claim
       await expect(
-        ecoNft.mintNFT(addr0.address, claim + "1")
+        ecoID.mintNFT(addr0.address, claim + "1")
       ).to.be.revertedWith("UnverifiedClaim()")
       // wrong address
-      await expect(ecoNft.mintNFT(owner.address, claim)).to.be.revertedWith(
+      await expect(ecoID.mintNFT(owner.address, claim)).to.be.revertedWith(
         "UnverifiedClaim()"
       )
     })
 
     it("should succeed to mint an nft for a claim and emit", async function () {
-      await expect(ecoNft.mintNFT(addr0.address, claim))
-        .to.emit(ecoNft, "Mint")
+      await expect(ecoID.mintNFT(addr0.address, claim))
+        .to.emit(ecoID, "Mint")
         .withArgs(addr0.address, claim, 1)
     })
 
     it("should revert nft has already been minted for claim", async function () {
       const tokenID = 1
-      await expect(ecoNft.mintNFT(addr0.address, claim))
-        .to.emit(ecoNft, "Mint")
+      await expect(ecoID.mintNFT(addr0.address, claim))
+        .to.emit(ecoID, "Mint")
         .withArgs(addr0.address, claim, tokenID)
 
-      await expect(ecoNft.mintNFT(addr0.address, claim)).to.be.revertedWith(
+      await expect(ecoID.mintNFT(addr0.address, claim)).to.be.revertedWith(
         `NftAlreadyMinted(${tokenID})`
       )
     })
 
     it("should allow minting of multiple nfts for different verified claims", async function () {
-      await expect(ecoNft.mintNFT(addr0.address, claim))
-        .to.emit(ecoNft, "Mint")
+      await expect(ecoID.mintNFT(addr0.address, claim))
+        .to.emit(ecoID, "Mint")
         .withArgs(addr0.address, claim, 1)
 
       // register new claim
@@ -801,8 +800,8 @@ describe("EcoNFT tests", async function () {
         chainID
       )
 
-      await expect(ecoNft.mintNFT(addr0.address, claim2))
-        .to.emit(ecoNft, "Mint")
+      await expect(ecoID.mintNFT(addr0.address, claim2))
+        .to.emit(ecoID, "Mint")
         .withArgs(addr0.address, claim2, 2)
     })
   })
@@ -826,7 +825,7 @@ describe("EcoNFT tests", async function () {
       )
 
       // check nonce incremented
-      const firstNonce = (await ecoNft.nonces(claim)).toNumber()
+      const firstNonce = (await ecoID.nonces(claim)).toNumber()
       expect(firstNonce).to.eq(nonce + 1)
 
       await registerClaim(
@@ -840,16 +839,16 @@ describe("EcoNFT tests", async function () {
         chainID
       )
 
-      await expect(ecoNft.mintNFT(addr0.address, claim))
+      await expect(ecoID.mintNFT(addr0.address, claim))
     })
 
     it("should revert on metadata for non-existant token", async function () {
-      await expect(ecoNft.tokenURI(10)).to.be.revertedWith("NonExistantToken()")
+      await expect(ecoID.tokenURI(10)).to.be.revertedWith("NonExistantToken()")
     })
 
     it("should dispay the verifier of a claim", async function () {
       const [meta, dataAttr, verifierAttrs] = await getMeta(
-        await ecoNft.tokenURI(1)
+        await ecoID.tokenURI(1)
       )
 
       expect(meta.description).to.equal(description)
@@ -869,14 +868,14 @@ describe("EcoNFT tests", async function () {
 
     it("should paginate", async function () {
       const [, , verifierAttrs] = await getMeta(
-        await ecoNft.tokenURICursor(1, 0, 1)
+        await ecoID.tokenURICursor(1, 0, 1)
       )
 
       expect(verifierAttrs[0].value).to.equal(owner.address.toLocaleLowerCase())
       expect(verifierAttrs.length).to.equal(1)
 
       const [, , verifierAttrs1] = await getMeta(
-        await ecoNft.tokenURICursor(1, 1, 1)
+        await ecoID.tokenURICursor(1, 1, 1)
       )
       expect(verifierAttrs1[0].value).to.equal(
         addr1.address.toLocaleLowerCase()
@@ -884,7 +883,7 @@ describe("EcoNFT tests", async function () {
       expect(verifierAttrs1.length).to.equal(1)
 
       const [, , verifierAttrs2] = await getMeta(
-        await ecoNft.tokenURICursor(1, 0, 10)
+        await ecoID.tokenURICursor(1, 0, 10)
       )
 
       expect(verifierAttrs2[0].value).to.equal(
@@ -925,12 +924,12 @@ describe("EcoNFT tests", async function () {
       deadline,
       nonce,
       chainID,
-      ecoNft.address
+      ecoID.address
     )
 
     await payFee(addr0, feeAmount)
     await expect(
-      ecoNft.register(
+      ecoID.register(
         claim,
         feeAmount,
         revocable,
@@ -941,7 +940,7 @@ describe("EcoNFT tests", async function () {
         verifySig
       )
     )
-      .to.emit(ecoNft, "RegisterClaim")
+      .to.emit(ecoID, "RegisterClaim")
       .withArgs(
         claim,
         feeAmount,
@@ -972,7 +971,7 @@ describe("EcoNFT tests", async function () {
   }
 
   /**
-   * Transfers tokens to the user and then approves the nft contract to
+   * Transfers tokens to the user and then approves the ecoID contract to
    * spend those tokens on their behalf
    *
    * @param user the user to transfer tokens to
@@ -980,6 +979,6 @@ describe("EcoNFT tests", async function () {
    */
   async function payFee(user: SignerWithAddress, fee: number) {
     await eco.transfer(user.address, fee)
-    await eco.connect(user).approve(ecoNft.address, fee)
+    await eco.connect(user).approve(ecoID.address, fee)
   }
 })
