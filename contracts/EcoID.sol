@@ -11,9 +11,9 @@ import "./Base64.sol";
 /**
  * This is the EcoNFT for verifying an arbitraty claim.
  */
-contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
+contract EcoID is ERC721("EcoID", "EcoID"), EIP712("EcoID", "1") {
     /**
-     * Use for signarture recovery and verification on minting of EcoNFT
+     * Use for signarture recovery and verification on minting of EcoID
      */
     using ECDSA for bytes32;
 
@@ -82,7 +82,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
     /**
      * Event for when the constructor has finished
      */
-    event InitializeEcoNFT();
+    event InitializeEcoID();
 
     /**
      * Event for when a claim is verified for a recipient
@@ -225,7 +225,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
     constructor(ERC20 token) {
         _token = token;
 
-        emit InitializeEcoNFT();
+        emit InitializeEcoID();
     }
 
     /**
@@ -249,7 +249,7 @@ contract EcoNFT is ERC721("EcoNFT", "EcoNFT"), EIP712("EcoNFT", "1") {
      * Registers a claim by an approved verifier to the recipient of that claim.
      *
      * @param claim the claim that is beign verified
-     * @param feeAmount the cost to mint the nft that is sent back to the verifier address
+     * @param feeAmount the fee the recipient is paying the verifier for the verification
      * @param revocable true if the verifier can revoke their verification of the claim in the future
      * @param recipient the address of the recipient of the registered claim
      * @param verifier the address that is verifying the claim
