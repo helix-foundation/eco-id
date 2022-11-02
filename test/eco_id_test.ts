@@ -2,12 +2,13 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
 import { ethers } from "hardhat"
 import { EcoID, EcoTest } from "../typechain-types"
-import { deployEcoID, Meta } from "./utils/fixtures"
+import { deployEcoID } from "./utils/fixtures"
 import {
   signRegistrationTypeMessage,
   signUnregistrationTypeMessage,
 } from "./utils/sign"
 import { latestBlockTimestamp } from "./utils/time"
+import { Meta } from "./utils/types"
 
 /**
  * Tests that the EcoID contract performs correctly on registration and minting of nft's
