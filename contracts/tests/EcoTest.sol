@@ -12,7 +12,7 @@ contract EcoTest is ERC20, IECO {
         string memory symbol_,
         uint256 amount
     ) ERC20(name_, symbol_) {
-        _mint(msg.sender, amount);
+        _mint(msg.sender, amount * 1 ether);
         inflation = 100;
     }
 
