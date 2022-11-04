@@ -22,6 +22,5 @@ yarn-error.log*
 lerna-debug.log*
 
 #Publish artifacts
-abi
 package
 lib

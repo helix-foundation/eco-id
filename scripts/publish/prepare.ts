@@ -2,9 +2,7 @@
 import fs from "fs"
 import path from "path"
 
-// DO NOT DELETE THIS FILE
-// This file is used by build system to build a clean npm package with the compiled js files in the root of the package.
-// It will not be included in the npm package.
+// This file is used by build system to build a clean npm package with the solidity files and their abi.
 
 function main() {
   const rootDir = path.join(__dirname, "/../..")
