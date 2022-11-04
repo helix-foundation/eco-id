@@ -1,5 +1,5 @@
 import { ethers } from "hardhat"
-import {  EcoID, EcoTest } from "../../typechain-types"
+import { EcoID, EcoTest } from "../../typechain-types"
 
 /**
  * Deploys the {@link EcoID} and support {@link ERC20}
