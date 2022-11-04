@@ -1,6 +1,6 @@
 {
-  "name": "eco-id",
-  "version": "1.0.0",
+  "name": "@helix-foundation/eco-id",
+  "version": "1.0.5",
   "description": "The solidity contracts for the eco identity system",
   "scripts": {
     "test": "hardhat test",
@@ -18,7 +18,7 @@
     "lintall": "yarn lint && yarn pretty && yarn sol",
     "lintall:fix": "yarn lint:fix && yarn pretty:fix && yarn sol:fix",
     "format": "yarn lintall:fix",
-    "publish": "cd lib && npm publish",
+    "publishRepo": "cd lib && npm publish",
     "publishLocal": "cd lib && npm pack",
     "prepare": "yarn build && npx ts-node scripts/publish/prepare.ts"
   },
@@ -38,6 +38,9 @@
     "url": "https://github.com/helix-foundation/eco-id/issues"
   },
   "homepage": "https://github.com/helix-foundation/eco-id#readme",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.1.1",
     "@nomiclabs/hardhat-etherscan": "^3.1.0",
