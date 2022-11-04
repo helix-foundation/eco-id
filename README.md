@@ -3,6 +3,7 @@ The repository contains the [EcoID](/contracts/EcoID.sol) contract, along with s
 ## Table of Contents
 
 - [Build & Test](#build--test)
+- [Installing Package](#installing--package)
 - [EcoID Contract](#ecoid-contract)
 - [Deploy Script](#deploy-script)
 
@@ -25,6 +26,17 @@ To run the linter and auto correct formatting issues:
 ```
 yarn format
 ```
+
+## Installing Package
+
+This repo is published on [Github Packages](npm.pkg.github.com/). In order to consume the package in your own blockchain and web3 projects you need to tell npm where to find github packages. 
+
+To add github packages to your project, create a file in your project root named `.npmrc`, with the below contents:
+```
+@helix-foundation:registry=https://npm.pkg.github.com
+```
+
+After you add the above file to your repo, both `npm` and `yarn` should be able to fetch the library.
 
 ## EcoID Contract
 
