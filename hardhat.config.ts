@@ -50,6 +50,7 @@ const config: HardhatUserConfig = {
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
     etherscan: {
+      url: process.env.MAINNET_URL || "",
       // @ts-ignore
       apiKey: process.env.ETHERSCAN_API_KEY || "",
     },
