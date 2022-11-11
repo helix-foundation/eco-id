@@ -65,6 +65,7 @@ yarn deploy
 The network the contracts are deployed to can be changed by editing the `deploy` command in [package.json](./package.json) and changing the `--network goerli` to the desired network. Note if you do change the deploy network, you will also have to ensure that your infura endpoints and private key are valid for that network in [hardhat.config.ts](./hardhat.config.ts)
 
 ## Bug Bounty
+
 This repo is covered by an [ImmuneFi Bug Bounty](https://immunefi.com/bounty/eco/). To submit bugs, please sign up on the ImmuneFi platform and submit your bug! 
 
 ## Contributing
