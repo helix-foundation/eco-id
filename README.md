@@ -7,6 +7,7 @@ The repository contains the [EcoID](/contracts/EcoID.sol) contract, along with s
 - [EcoID Contract](#ecoid-contract)
 - [Deploy Script](#deploy-script)
 - [Bug Bounty](#bug-bounty)
+- [Known Issues](#known-issues)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -66,7 +67,12 @@ The network the contracts are deployed to can be changed by editing the `deploy`
 
 ## Bug Bounty
 
-This repo is covered by an [ImmuneFi Bug Bounty](https://immunefi.com/bounty/eco/). To submit bugs, please sign up on the ImmuneFi platform and submit your bug! 
+This repo is covered by an [ImmuneFi Bug Bounty](https://immunefi.com/bounty/eco/). To submit bugs, please sign up on the ImmuneFi platform and submit your bug!
+
+## Known Issues
+
+- It's posible to make a claim that is truncated json data, such that it can inject values into the json metadata that is returned from `tokenURI(uint256 tokenID)`. It is therefore important to get the tokenID for an NFT by searching
+  for it by its actual claim. You can reference a test example [here](./test/eco_id_test.ts#L745-L779) of how such a case might arise.
 
 ## Contributing
 

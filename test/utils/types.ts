@@ -9,3 +9,12 @@ export type Meta = {
     value: string[]
   }
 }
+
+// The inclusive set of all the permitted keys in a metadata object
+export const MetaKeys = [
+  "description",
+  "external_url",
+  "image",
+  "name",
+  "attributes",
+]
