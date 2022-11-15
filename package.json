@@ -20,7 +20,7 @@
     "format": "yarn lintall:fix",
     "publishRepo": "cd lib && npm publish",
     "publishLocal": "cd lib && npm pack",
-    "prepare": "yarn build && npx ts-node scripts/publish/prepare.ts",
+    "prepareLib": "yarn build && npx ts-node scripts/publish/prepare.ts",
     "verifyEcoIDEtherscan": "npx hardhat verify --network mainnet --constructor-args arguments.js 0x5bc2Fa9426e882710d055C1A60F8cc93A31Edc58"
   },
   "repository": {
