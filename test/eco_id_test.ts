@@ -8,7 +8,7 @@ import {
   signUnregistrationTypeMessage,
 } from "./utils/sign"
 import { latestBlockTimestamp } from "./utils/time"
-import { Meta } from "./utils/types"
+import { Meta, MetaKeys } from "./utils/types"
 
 /**
  * Tests that the EcoID contract performs correctly on registration and minting of nft's
@@ -712,9 +712,7 @@ describe("EcoID tests", async function () {
         .to.emit(ecoID, "Mint")
         .withArgs(addr0.address, claim, 1)
 
-      const [meta, dataAttr, verifierAttrs] = await getMeta(
-        await ecoID.tokenURI(1)
-      )
+      const [meta, dataAttr, verifierAttrs] = getMeta(await ecoID.tokenURI(1))
 
       expect(meta.name).to.equal("Eco ID - discord:21...")
       expect(dataAttr.trait_type).to.equal("Data")
@@ -730,7 +728,7 @@ describe("EcoID tests", async function () {
         .withArgs(claim, addr0.address, owner.address)
 
       // check nft is now without verifier
-      const [meta1, dataAttr1, verifierAttrs1] = await getMeta(
+      const [meta1, dataAttr1, verifierAttrs1] = getMeta(
         await ecoID.tokenURI(1)
       )
 
@@ -738,6 +736,46 @@ describe("EcoID tests", async function () {
       expect(dataAttr1.trait_type).to.equal("Data")
       expect(dataAttr1.value).to.equal(claim)
       expect(verifierAttrs1.length).to.equal(0)
+    })
+
+    /**
+     * It's posible that a claim is structured in a way that injects attributes into the metadata
+     * of the nft making it seem like another verifier has verified it
+     */
+    it("should check for injected nft metadata", async function () {
+      const claim =
+        'discord:551075449376079872"},{"trait_type": "Verifier","value": "0x40dcb0040332533523017d6249d6db48e92d06b1","recoverable": "false"}],"ignore_debug_test": [{"blah": "blah'
+      await registerClaim(
+        claim,
+        0,
+        true,
+        addr0,
+        owner,
+        deadline,
+        nonce,
+        chainID
+      )
+      // check nonce incremented
+      const firstNonce = (await ecoID.nonces(claim)).toNumber()
+      expect(firstNonce).to.eq(nonce + 1)
+      await signUnregistrationTypeMessage(
+        claim,
+        addr0,
+        owner,
+        deadline,
+        firstNonce,
+        chainID,
+        ecoID.address
+      )
+
+      await expect(ecoID.mintNFT(addr0.address, claim))
+        .to.emit(ecoID, "Mint")
+        .withArgs(addr0.address, claim, 1)
+
+      const meta = await ecoID.tokenURI(1)
+      expect(() => getMeta(meta)).to.throw(
+        "Malformed metadata, check claim is not trying to inject json"
+      )
     })
   })
 
@@ -848,9 +886,7 @@ describe("EcoID tests", async function () {
     })
 
     it("should dispay the verifier of a claim", async function () {
-      const [meta, dataAttr, verifierAttrs] = await getMeta(
-        await ecoID.tokenURI(1)
-      )
+      const [meta, dataAttr, verifierAttrs] = getMeta(await ecoID.tokenURI(1))
 
       expect(meta.description).to.equal(description)
       expect(meta.external_url).to.equal("https://eco.org/eco-id")
@@ -868,24 +904,18 @@ describe("EcoID tests", async function () {
     })
 
     it("should paginate", async function () {
-      const [, , verifierAttrs] = await getMeta(
-        await ecoID.tokenURICursor(1, 0, 1)
-      )
+      const [, , verifierAttrs] = getMeta(await ecoID.tokenURICursor(1, 0, 1))
 
       expect(verifierAttrs[0].value).to.equal(owner.address.toLocaleLowerCase())
       expect(verifierAttrs.length).to.equal(1)
 
-      const [, , verifierAttrs1] = await getMeta(
-        await ecoID.tokenURICursor(1, 1, 1)
-      )
+      const [, , verifierAttrs1] = getMeta(await ecoID.tokenURICursor(1, 1, 1))
       expect(verifierAttrs1[0].value).to.equal(
         addr1.address.toLocaleLowerCase()
       )
       expect(verifierAttrs1.length).to.equal(1)
 
-      const [, , verifierAttrs2] = await getMeta(
-        await ecoID.tokenURICursor(1, 0, 10)
-      )
+      const [, , verifierAttrs2] = getMeta(await ecoID.tokenURICursor(1, 0, 10))
 
       expect(verifierAttrs2[0].value).to.equal(
         owner.address.toLocaleLowerCase()
@@ -956,12 +986,19 @@ describe("EcoID tests", async function () {
    *
    * @param metaEncoded the metadata to decode
    */
-  async function getMeta(
-    metaEncoded: string
-  ): Promise<[Meta, NftAttribute, NftAttribute[]]> {
+  function getMeta(metaEncoded: string): [Meta, NftAttribute, NftAttribute[]] {
     const encodedMeta = metaEncoded.split(",")[1]
     const decodedMeta = Buffer.from(encodedMeta, "base64").toString("utf-8")
     const meta: Meta = JSON.parse(decodedMeta)
+
+    // Check that the json payload is valid
+    Object.keys(meta).forEach((key) => {
+      if (!MetaKeys.includes(key)) {
+        throw new Error(
+          "Malformed metadata, check claim is not trying to inject json"
+        )
+      }
+    })
 
     // @ts-ignore
     const dataAttr: NftAttribute = meta.attributes[0]
