@@ -12,6 +12,12 @@ The repository contains the [EcoID](/contracts/EcoID.sol) contract, along with s
 
 ## Build & Test
 
+To install dependencies:
+
+```
+yarn 
+```
+
 To build the project:
 
 ```
