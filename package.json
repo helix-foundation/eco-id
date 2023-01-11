@@ -20,7 +20,7 @@
     "format": "yarn lintall:fix",
     "publishRepo": "cd lib && npm publish",
     "publishLocal": "cd lib && npm pack",
-    "prepare": "yarn build && npx ts-node scripts/publish/prepare.ts",
+    "prepareLib": "yarn build && npx ts-node scripts/publish/prepare.ts",
     "verifyEcoIDEtherscan": "npx hardhat verify --network mainnet --constructor-args arguments.js 0x5bc2Fa9426e882710d055C1A60F8cc93A31Edc58"
   },
   "repository": {
@@ -49,6 +49,7 @@
     "@typechain/ethers-v5": "^10.1.0",
     "@typechain/hardhat": "^6.1.3",
     "@types/chai": "^4.3.3",
+    "@types/mocha": "^10.0.0",
     "@types/node": "^18.8.2",
     "@typescript-eslint/eslint-plugin": "^4.29.1",
     "@typescript-eslint/parser": "^4.29.1",
