@@ -1,6 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
-import { ethers } from "hardhat"
+import { ethers, upgrades } from "hardhat"
 import { EcoID, EcoTest } from "../typechain-types"
 import { deployEcoID } from "./utils/fixtures"
 import {
@@ -927,6 +927,21 @@ describe("EcoID tests", async function () {
     })
   })
 
+  describe("On Proxy update", async function () {
+    it("should upgrade implementation contract but maintain state", async function () {
+      const nfts = 12345
+      const EcoID2 = await ethers.getContractFactory("EcoID2")
+      const eco2 = await upgrades.upgradeProxy(ecoID.address, EcoID2, {
+        call: { fn: "initialize2", args: [nfts] },
+      })
+
+      // check implementation change
+      expect(await eco2._totalNfts()).to.eq(nfts)
+
+      // check state persistance
+      expect(await eco2._token()).to.eq(eco.address)
+    })
+  })
   /**
    * Registers a claim
    *
