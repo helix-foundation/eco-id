@@ -79,7 +79,7 @@ describe("EcoID tests", async function () {
 
       await expect(
         ecoID.transferFrom(addr0.address, owner.address, tokenID)
-      ).to.be.revertedWith("ERC721: caller is not token owner nor approved")
+      ).to.be.revertedWith("ERC721: caller is not token owner or approved")
     })
   })
 

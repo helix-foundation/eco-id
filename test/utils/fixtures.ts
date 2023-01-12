@@ -1,10 +1,9 @@
-import { ethers } from "hardhat"
+import { ethers, upgrades } from "hardhat"
 import { EcoID, EcoTest } from "../../typechain-types"
-
 /**
- * Deploys the {@link EcoID} and support {@link ERC20}
+ * Deploys the {@link EcoID} through a proxy, as well as a support ERC20
  *
- * @return All the contracts
+ * @return The ERC20 and the proxy of EcoID
  */
 export async function deployEcoID(): Promise<[EcoTest, EcoID]> {
   const amount = 1000000000
@@ -13,9 +12,12 @@ export async function deployEcoID(): Promise<[EcoTest, EcoID]> {
   const eco = await EcoTest.deploy("Eco", "Eco", amount)
   await eco.deployed()
 
-  const EcoID = await ethers.getContractFactory("EcoID")
-  const ecoID = await EcoID.deploy(eco.address)
-  await ecoID.deployed()
+  const EcoIDContract = await ethers.getContractFactory("EcoID")
+  const ecoIDProxy = await upgrades.deployProxy(EcoIDContract, [eco.address], {
+    initializer: "initialize",
+  })
+  await ecoIDProxy.deployed()
+
   // @ts-ignore
-  return [eco, ecoID]
+  return [eco, ecoIDProxy]
 }

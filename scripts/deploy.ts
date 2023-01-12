@@ -1,5 +1,4 @@
 import { ethers, upgrades } from "hardhat"
-// import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 async function main() {
   const EcoIDContract = await ethers.getContractFactory("EcoID")
@@ -17,15 +16,14 @@ async function main() {
   //   { gasPrice: gasPrice }
   // )
   console.log(`eco address ${process.env.ECO_ADDRESS}`)
-  const ecoIDContract = await upgrades.deployProxy(
+  const ecoIDProxy = await upgrades.deployProxy(
     EcoIDContract,
     [process.env.ECO_ADDRESS as string],
     { initializer: "initialize" }
   )
 
-  await ecoIDContract.deployed()
-
-  console.log("EcoID Contract deployed to:", ecoIDContract.address)
+  await ecoIDProxy.deployed()
+  console.log("EcoID Proxy deployed to:", ecoIDProxy.address)
 }
 
 main().catch((error) => {
