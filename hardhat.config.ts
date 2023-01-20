@@ -7,6 +7,9 @@ import "@typechain/hardhat"
 import "hardhat-gas-reporter"
 import "solidity-coverage"
 
+import "@nomiclabs/hardhat-ethers"
+import "@openzeppelin/hardhat-upgrades"
+
 dotenv.config()
 
 task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {

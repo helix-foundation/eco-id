@@ -6,7 +6,7 @@
     "test": "hardhat test",
     "compile": "hardhat compile",
     "build": "yarn compile",
-    "deploy": "hardhat run scripts/deploy.ts --network goerli",
+    "deploy": "hardhat run scripts/deploy.ts --network localhost",
     "clean": "hardhat clean",
     "node": "hardhat node",
     "lint": "eslint --ext .js,.ts,.tsx .",
@@ -46,6 +46,7 @@
     "@nomiclabs/hardhat-ethers": "^2.1.1",
     "@nomiclabs/hardhat-etherscan": "^3.1.2",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
+    "@openzeppelin/hardhat-upgrades": "^1.22.0",
     "@typechain/ethers-v5": "^10.1.0",
     "@typechain/hardhat": "^6.1.3",
     "@types/chai": "^4.3.3",
@@ -78,6 +79,7 @@
     "typescript": "^4.5.2"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.6.0"
+    "@openzeppelin/contracts": "^4.6.0",
+    "@openzeppelin/contracts-upgradeable": "^4.8.0"
   }
 }

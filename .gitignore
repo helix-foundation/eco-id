@@ -24,3 +24,6 @@ lerna-debug.log*
 #Publish artifacts
 package
 lib
+
+# OpenZeppelin
+.openzeppelin/unknown-*.json

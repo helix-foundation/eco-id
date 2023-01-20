@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
 import "./Base64.sol";
 
 /**
  * This is the EcoNFT for verifying an arbitraty claim.
  */
-contract EcoID is ERC721("EcoID", "EcoID"), EIP712("EcoID", "1") {
+contract EcoID is ERC721Upgradeable, EIP712Upgradeable {
     /**
      * Use for signarture recovery and verification on minting of EcoID
      */
@@ -194,7 +196,7 @@ contract EcoID is ERC721("EcoID", "EcoID"), EIP712("EcoID", "1") {
     /**
      * Stores the last token index minted
      */
-    uint256 public _tokenIDIndex = 1;
+    uint256 public _tokenIDIndex;
 
     /**
      * Mapping the user address with all claims they have
@@ -215,16 +217,26 @@ contract EcoID is ERC721("EcoID", "EcoID"), EIP712("EcoID", "1") {
     /**
      * The token contract that is used for fee payments to the minter address
      */
-    ERC20 public immutable _token;
+    ERC20 public _token;
 
     /**
-     * Constructor that sets the ERC20 and emits an initialization event
+     * Disable the implementation contract
+     */
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    /**
+     * Proxy initializer that sets the ERC20 and emits an initialization event
      *
      * @param token the erc20 that is used to pay for registrations
      */
-    constructor(ERC20 token) {
+    function initialize(ERC20 token) public initializer {
+        ERC721Upgradeable.__ERC721_init("EcoID", "EcoID");
+        EIP712Upgradeable.__EIP712_init("EcoID", "1");
         _token = token;
-
+        _tokenIDIndex = 1;
         emit InitializeEcoID();
     }
 
