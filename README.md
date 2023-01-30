@@ -33,12 +33,10 @@ yarn format
 
 ## Installing Package
 
-This repo is published on [Github Packages](npm.pkg.github.com/). In order to consume the package in your own blockchain and web3 projects you need to tell npm where to find github packages.
-
-To add github packages to your project, create a file in your project root named `.npmrc`, with the below contents:
+This repo is published on [Npm](https://www.npmjs.com/package/@helix-foundation/eco-id). 
 
 ```
-@helix-foundation:registry=https://npm.pkg.github.com
+yarn add @helix-foundation/eco-id
 ```
 
 After you add the above file to your repo, both `npm` and `yarn` should be able to fetch the library.
