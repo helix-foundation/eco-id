@@ -39,9 +39,6 @@
     "url": "https://github.com/helix-foundation/eco-id/issues"
   },
   "homepage": "https://github.com/helix-foundation/eco-id#readme",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.1.1",
     "@nomiclabs/hardhat-etherscan": "^3.1.2",
